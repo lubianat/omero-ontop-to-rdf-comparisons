@@ -1,13 +1,12 @@
 # Comparison of the OMERO-ONTOP and OMERO-RDF
 
-
 OMERO-ONTOP and OMERO-RDF are two different projects towards a similar goal: making microscopy metadata from OMERO databases acessible from SPARQL endpoints. For that, the database information needs to be stored in RDF triples, and conversion is needed. 
 
 To understand the details and differences of both, it is important to grasp some core concepts. They include:
 
 * The OME Data Model, OME-XML and OME-TIFF 
 
-* The representation of the OME Data Model in OMERO Postgres database
+* The representation of the OME Data Model in OMERO databases
 
 * The ontologies and namespaces related to OME 
 
@@ -15,10 +14,15 @@ To understand the details and differences of both, it is important to grasp some
 
 * The process of building a virtual knowledge graph on top of a relational database (done by OMERO-ONTOP)
 
+
+Here I'll explore a bit the OME Data Model and its basis before diving into the intricacies of both approaches.
+The overview will draw from multiple sources, including the list of OME publications at https://www.openmicroscopy.org/citing-ome/. 
+
 ## The OME Data Model, OME-XML and OME-TIFF 
 
-Published [in 2005](https://genomebiology.biomedcentral.com/articles/10.1186/gb-2005-6-5-r47), the  OME Data Model "defines a data model and a software implementation to serve as an informatics framework for imaging in biological microscopy experiments."
-It organizes data around Projects, Datasets, Images and other classes. A good overall description is provided in the article itself:
+While the vision for OME was shared in 2003, it was in [in 2005](https://genomebiology.biomedcentral.com/articles/10.1186/gb-2005-6-5-r47), that the OME Data Model" got first published on an article. It "defines a data model and a software implementation to serve as an informatics framework for imaging in biological microscopy experiments."
+
+It does so organizes data around Projects, Datasets, Images and other elements. A good overall description is provided in the article itself:
 
 _"All information in the OME Data Model can be reduced to 'semantic types' (STs). (...) STs can describe information at four levels in the OME hierarchy: Global, Dataset, Image and Feature. Global STs are used to describe 'Experimenters', 'Groups', 'Microscopes', and so on - items that are applicable to all images in an OME database. Dataset STs are used to describe information about datasets - information pertinent to a collection of images. Image STs describe information pertinent to images, and feature STs describe information about image features - objects or 'blobs' within images. In our nomenclature, the data type is an ST, and the data itself is an attribute. For example, the 'Pixels' data type is an Image ST, and a particular set of Pixels is an attribute of a particular Image."_
 
@@ -245,3 +249,24 @@ and
   </xsd:element>
 ```
 
+
+## The representation of the OME Data Model in OMERO databases
+
+Now that we have a basic understanding of the OME Data Model, let's see how it is used in practice by OMERO servers. 
+
+It was [https://www.nature.com/articles/nmeth.1896 published in 2012] as _OME Remote Objects (OMERO), a software platform that enables access to and use of a wide range of biological data. OMERO uses a server-based middleware application to provide a unified interface for images, matrices and tables._ It follows on to describe that OMERO is not a single application, but many, or in their words,_"a tiered application of databases, middleware and remote client applications._
+
+Figure 1B of the article describes the main information for our purposes here: _OME-XML is used by OMERO code generators to generate the OMERO relational database, the object-relational mapping model and the ICE-based remote-access system._
+
+It is also relevant to understand the data flow, for example when importing files in proprietary formats to OMERO: 
+
+_Data are imported into OMERO using Bio-Formats. All metadata are read and, where possible, mapped to the OME Data Model. Metadata are stored in the OMERO relational database, and binary pixel data are converted to an efficient binary-only file and stored in a file repository owned by the OMERO installation. To ensure data integrity **Bio-Formats also converts all proprietary file format metadata into a table of key-value pairs that are then stored as an annotation on the imported image in OMERO**. OMERO supports import using a desktop application (OMERO. importer), a command-line interface or a file-system monitoring tool (OMERO.Dropbox). Alternatively, third parties can write their own, specialized importers._
+
+From there, it is possible to see that the Annotations in OMERO installations are indeed central, as they host anything that the OME Data Model was not able to capture beforehand. 
+
+(to be continued)
+
+
+## The ontologies and namespaces related to OME 
+
+(build upon https://ceur-ws.org/Vol-2849/paper-25.pdf)
