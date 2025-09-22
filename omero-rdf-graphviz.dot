@@ -1,0 +1,195 @@
+digraph OMERO_RDF_COMPACT {
+    rankdir = LR;
+    fontname = "Helvetica";
+    
+    node [fontname = "Helvetica";];
+    edge [fontname = "Helvetica";];
+    
+    // === Core Containers ===
+    subgraph cluster_containers {
+        open;
+        label = "Core Containers";
+        style = filled;
+        color = lightgrey;
+        
+        Project [label = "Project\n(OME:Project)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Dataset [label = "Dataset\n(OME:Dataset)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Image [label = "Image\n(OME:Image)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Pixels [label = "Pixels\n(OME:Pixels)\n— detailed example";shape = box;style = "rounded,filled";fillcolor = white;];
+        ROI [label = "ROI\n(OME:ROI)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Shape [label = "Shape\n(OME:Shape)";shape = box;style = "rounded,filled";fillcolor = white;];
+        
+        Screen [label = "Screen\n(OME:Screen)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Plate [label = "Plate\n(OME:Plate)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Well [label = "Well\n(OME:Well)";shape = box;style = "rounded,filled";fillcolor = white;];
+    }
+    
+    // === Containment (double arrows) ===
+    Project -> Dataset [label = "dcterms:hasPart";];
+    Dataset -> Image [label = "dcterms:hasPart";];
+    Image -> Pixels [label = "dcterms:hasPart";];
+    Pixels -> ROI [label = "dcterms:hasPart";];
+    ROI -> Shape [label = "dcterms:hasPart";];
+    
+    Screen -> Plate [label = "dcterms:hasPart";];
+    Plate -> Well [label = "dcterms:hasPart";];
+    Well -> Image [label = "dcterms:hasPart";];
+    
+    // === Metadata (shared literals) ===
+    Project -> "Name" [label = "omopenopene:Name";];
+    Project -> "Object Description" [label = "ome:Description";];
+    
+    Dataset -> "Name" [label = "ome:Name";];
+    Dataset -> "Object Description" [label = "ome:Description";];
+    
+    Image -> "Name" [label = "ome:Name";];
+    Image -> "Object Description" [label = "ome:Description";];
+    
+    ROI -> "Name" [label = "ome:Name";];
+    ROI -> "Object Description" [label = "ome:Description";];
+    
+    // === Pixels attributes (explicit example) ===
+    subgraph cluster_pixels {
+        open;
+        label = "Expanded example for Pixels";
+        style = filled;
+        color = yellow;
+        
+        "Pixels …" [shape = note;style = filled;fillcolor = yellow;];
+        openopenopenopenopen;
+        Pixels -> "SizeX" [label = "ome:SizeX";];
+        Pixels -> "SizeY" [label = "ome:SizeY";];
+        Pixels -> "SizeZ" [label = "ome:SizeZ";];
+        Pixels -> "SizeC" [label = "ome:SizeC [enum]";];
+        Pixels -> "SizeT" [label = "ome:SizeT";];
+        Pixels -> "PhysicalSizeX" [label = "ome:PhysicalSizeX (bNode)";];
+        Pixels -> "PhysicalSizeY" [label = "ome:PhysicalSizeY (bNode)";];
+        Pixels -> "PhysicalSizeZ" [label = "ome:PhysicalSizeZ (bNode)";];
+        Pixels -> "TimeIncrement" [label = "ome:TimeIncrement (bNode)";];
+        Pixels -> "Type" [label = "ome:Type [enum]";];
+        Pixels -> "sha1" [label = "omero:sha1";];
+        Pixels -> "SignificantBits" [label = "ome:SignificantBits";];
+    }
+    
+    subgraph cluster_direct_literals {
+        openopen;
+        style = filled;
+        color = lightgray;
+        
+        "Name" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+        "Object Description" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+    }
+    // === Styles ===
+    
+    
+    "SizeX" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+    "SizeY" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+    "SizeZ" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+    "SizeC" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+    "SizeT" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+    "SignificantBits" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+    "XML Blob" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+    "Type" [shape = diamond;style = filled;fillcolor = lightgreen;];
+    "sha1" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+    "PhysicalSizeX" [shape = circle;style = "dashed,filled";fillcolor = lightpink;];
+    "PhysicalSizeY" [shape = circle;style = "dashed,filled";fillcolor = lightpink;];
+    "PhysicalSizeZ" [shape = circle;style = "dashed,filled";fillcolor = lightpink;];
+    "TimeIncrement" [shape = circle;style = "dashed,filled";fillcolor = lightpink;];
+    
+    // === Placeholder nodes for other classes ===
+    Project -> "Project …" [style = dotted;];
+    Dataset -> "Dataset …" [style = dotted;];
+    Image -> "Image …" [style = dotted;];
+    ROI -> "ROI …" [style = dotted;];
+    Shape -> "Shape …" [style = dotted;];
+    Screen -> "Screen …" [style = dotted;];
+    Plate -> "Plate …" [style = dotted;];
+    Well -> "Well …" [style = dotted;];
+    
+    subgraph cluster_extra {
+        label = "Additional information from OMERO-Marshal / OMERO Model";
+        style = filled;
+        color = lightgray;
+        
+        
+        "Project …" [shape = note;style = filled;fillcolor = yellow;];
+        "Dataset …" [shape = note;style = filled;fillcolor = yellow;];
+        "Image …" [shape = note;style = filled;fillcolor = yellow;];
+        "ROI …" [shape = note;style = filled;fillcolor = yellow;];
+        "Shape …" [shape = note;style = filled;fillcolor = yellow;];
+        "Screen …" [shape = note;style = filled;fillcolor = yellow;];
+        "Plate …" [shape = note;style = filled;fillcolor = yellow;];
+        "Well …" [shape = note;style = filled;fillcolor = yellow;];
+    }
+    open;
+    // === Annotations ===
+    subgraph cluster_annotations {
+        label = "Annotations";
+        style = filled;
+        color = lightblue;
+        
+        Annotation [label = "Annotation\n(blank node)\n→ one of enum types";shape = box;style = "dashed,filled";fillcolor = lightgray;];
+        Annotation -> MapAnnotation [arrowhead = none;];
+        Annotation -> XmlAnnotation [arrowhead = none;];
+        Annotation -> TagAnnotation [arrowhead = none;];
+        Annotation -> CommentAnnotation [arrowhead = none;];
+        Annotation -> FileAnnotation [arrowhead = none;];
+        
+        MapAnnotation [label = "MapAnnotation\n(ome:MapAnnotation)";shape = box;style = "rounded,filled";fillcolor = white;];
+        XmlAnnotation [label = "XmlAnnotation\n(ome:XmlAnnotation)";shape = box;style = "rounded,filled";fillcolor = white;];
+        TagAnnotation [label = "TagAnnotation\n(ome:TagAnnotation)";shape = box;style = "rounded,filled";fillcolor = white;];
+        CommentAnnotation [label = "CommentAnnotation\n(ome:CommentAnnotation)";shape = box;style = "rounded,filled";fillcolor = white;];
+        FileAnnotation [label = "FileAnnotation\n(ome:FileAnnotation)";shape = box;style = "rounded,filled";fillcolor = white;];
+        
+        // MapAnnotation details
+        MapAnnotation -> "Namespace" [label = "ome:Namespace";];
+        MapAnnotation -> "Map" [label = "ome:Map";];
+        MapAnnotation -> "P703 value" [label = "wd:P703 (found in taxon)";];
+        MapAnnotation -> "Annotation Description" [label = "ome:Description";];
+        
+        "Map" [shape = circle;style = "dashed,filled";fillcolor = lightblue;];
+        "Key" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+        "Value" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+        "Map" -> "Key" [label = "ome:Key"; style = dashed;];
+        "Map" -> "Value" [label = "ome:Value"; style = dashed;];
+        
+        XmlAnnotation -> "XML Blob" [label = "ome:Value";];
+        XmlAnnotation -> "Namespace" [label = "ome:Namespace";];
+        
+        TagAnnotation -> "Value" [label = "ome:Value";];
+        TagAnnotation -> "Annotation Description" [label = "ome:Description";];
+        
+        CommentAnnotation -> "Value" [label = "ome:Value";];
+        
+        FileAnnotation -> "File" [label = "ome:File";];
+        FileAnnotation -> "Annotation Description" [label = "ome:Description";];
+        
+        "Namespace" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+        "Annotation Description" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+        "File" [shape = diamond;style = filled;fillcolor = lightgreen;];
+        "P703 value" [shape = diamond;style = filled;fillcolor = lightgreen;];
+    }
+    
+    // === Annotation edges (blue) ===
+    edge [color = blue;];
+    Project -> Annotation [label = "ome:annotation";];
+    Dataset -> Annotation [label = "ome:annotation";];
+    Image -> Annotation [label = "ome:annotation";];
+    ROI -> Annotation [label = "ome:annotation";];
+    Shape -> Annotation [label = "ome:annotation";];
+    Screen -> Annotation [label = "ome:annotation";];
+    Plate -> Annotation [label = "ome:annotation";];
+    Well -> Annotation [label = "ome:annotation";];
+    
+    edge [color = black;];
+    
+    // === Prefixes Legend ===
+    subgraph cluster_legend {
+        label = "Prefixes";
+        style = dashed;
+        "dcterms:" [shape = plaintext;label = "dcterms: http://purl.org/dc/terms/";];
+        "ome:" [shape = plaintext;label = "ome: http://www.openmicroscopy.org/rdf/2016-06/ome_core/";];
+        "omero:" [shape = plaintext;label = "omero: http://www.openmicroscopy.org/TBD/omero/";];
+        "wd:" [shape = plaintext;label = "wd: http://www.wikidata.org/prop/direct/";];
+    }
+}

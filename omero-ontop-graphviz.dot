@@ -1,0 +1,180 @@
+digraph OMERO_OBDA_BEAUTIFUL {
+    rankdir = LR;
+    fontname = "Helvetica";
+    
+    // --- Defaults ---
+    node [fontname = "Helvetica";];
+    edge [fontname = "Helvetica";];
+    graph [splines = true; overlap = false; bgcolor = "white";];
+    
+    // =========================
+    // Core entity classes
+    // =========================
+    subgraph cluster_entities {
+        label = "Core Entities (OBDA mapping)";
+        style = filled;
+        color = lightgrey;
+        
+        Project [label = "Project\n(core:Project)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Dataset [label = "Dataset\n(core:Dataset)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Image [label = "Image\n(core:Image)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Pixels [label = "Pixels\n(core:Pixels)";shape = box;style = "rounded,filled";fillcolor = white;];
+        ROI [label = "ROI\n(core:ROI)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Channel [label = "Channel\n(core:Channel)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Screen [label = "Screen\n(core:Screen)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Plate [label = "Plate\n(core:Plate)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Well [label = "Well\n(core:Well)";shape = box;style = "rounded,filled";fillcolor = white;];
+        WellSample [label = "WellSample\n(core:WellSample)";shape = box;style = "rounded,filled";fillcolor = white;];
+        PlateAcq [label = "PlateAcquisition\n(core:PlateAcquisition)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Reagent [label = "Reagent\n(core:Reagent)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Expmt [label = "Experimenter\n(core:Experimenter)";shape = box;style = "rounded,filled";fillcolor = white;];
+        ExpGrp [label = "ExperimenterGroup\n(core:ExperimenterGroup)";shape = box;style = "rounded,filled";fillcolor = white;];
+    }
+    
+    // =========================
+    // Structural relationships
+    // =========================
+    // Datasets & Images
+    Dataset -> Image [label = "core:image";];
+    
+    // Projects ↔ Datasets
+    Project -> Dataset [label = "core:dataset";];
+    
+    // Pixels / Image / ROI / Channel
+    Pixels -> Image [label = "this:image";];
+    ROI -> Image [label = "core:image";];
+    Channel -> Pixels [label = "this:pixels";];
+    
+    // Screens, Plates, Wells
+    Well -> Plate [label = "core:plate";];
+    // Plate ↔ Screen (both directions exist in mappings)
+    Plate -> Screen [dir = both; label = "core:plate / this:screen";];
+    
+    // WellSample joins
+    WellSample -> Well [label = "core:well";];
+    WellSample -> PlateAcq [label = "core:run";];
+    WellSample -> Image [label = "core:image";];
+    
+    // Reagents linked from Wells
+    Well -> Reagent [label = "this:reagent";];
+    
+    // Ownership & Group (pattern shown on representative nodes)
+    Project -> Expmt [label = "core:owner";];
+    Project -> ExpGrp [label = "core:group";];
+    Image -> Expmt [label = "core:owner";];
+    Image -> ExpGrp [label = "core:group";];
+    
+    // =========================
+    // Metadata literals (representative)
+    // =========================
+    Project -> "dc:identifier" [label = "dc:identifier";];
+    Project -> "rdfs:label" [label = "rdfs:label";];
+    Project -> "rdfs:comment" [label = "rdfs:comment";];
+    
+    Dataset -> "dc:identifier" [label = "dc:identifier";];
+    Dataset -> "rdfs:label" [label = "rdfs:label";];
+    Dataset -> "rdfs:comment" [label = "rdfs:comment";];
+    
+    Image -> "dc:identifier" [label = "dc:identifier";];
+    Image -> "rdfs:label" [label = "rdfs:label";];
+    Image -> "rdfs:comment" [label = "rdfs:comment";];
+    Image -> "this:acquisition_date" [label = "this:acquisition_date";];
+    
+    Channel -> "this:red" [label = "this:red";];
+    Channel -> "this:green" [label = "this:green";];
+    Channel -> "this:blue" [label = "this:blue";];
+    
+    Pixels -> "this:physical_size_x" [label = "this:physical_size_x";];
+    Pixels -> "this:physical_size_x_unit" [label = "this:physical_size_x_unit";];
+    Pixels -> "this:physical_size_y" [label = "this:physical_size_y";];
+    Pixels -> "this:physical_size_y_unit" [label = "this:physical_size_y_unit";];
+    Pixels -> "this:physical_size_z" [label = "this:physical_size_z";];
+    Pixels -> "this:physical_size_z_unit" [label = "this:physical_size_z_unit";];
+    
+    // Literal node styling
+    "dc:identifier" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+    "rdfs:label" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+    "rdfs:comment" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+    "this:acquisition_date" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+    "this:red" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+    "this:green" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+    "this:blue" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+    "this:physical_size_x" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+    "this:physical_size_y" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+    "this:physical_size_z" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+    "this:physical_size_x_unit" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+    "this:physical_size_y_unit" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+    "this:physical_size_z_unit" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+    
+    // =========================
+    // Flattened annotations (blue edges)
+    // =========================
+    edge [color = blue;];
+    // Key–value annotations become dynamic predicates <namespace/key> with literal values.
+    Project -> "KV value" [label = "<ns/key>";];
+    Dataset -> "KV value" [label = "<ns/key>";];
+    Image -> "KV value" [label = "<ns/key>";];
+    Screen -> "KV value" [label = "<ns/key>";];
+    Plate -> "KV value" [label = "<ns/key>";];
+    PlateAcq -> "KV value" [label = "<ns/key>";];
+    Well -> "KV value" [label = "<ns/key>";];
+    Reagent -> "KV value" [label = "<ns/key>";];
+    
+    // Tags flattened as literals
+    Dataset -> "Tag text" [label = "this:tag_annotation_value";];
+    Image -> "Tag text" [label = "this:tag_annotation_value";];
+    Project -> "Tag text" [label = "this:tag_annotation_value";];
+    Screen -> "Tag text" [label = "this:tag_annotation_value";];
+    Plate -> "Tag text" [label = "this:tag_annotation_value";];
+    PlateAcq -> "Tag text" [label = "this:tag_annotation_value";];
+    Reagent -> "Tag text" [label = "this:tag_annotation_value";];
+    Well -> "Tag text" [label = "this:tag_annotation_value";];
+    
+    // Style for flattened annotation literal targets
+    "KV value" [shape = ellipse;style = "filled";fillcolor = "#e8f0ff";label = "Annotation value (flattened)";];
+    "Tag text" [shape = ellipse;style = "filled";fillcolor = "#e8f0ff";label = "Tag text";];
+    
+    // Reset edge color
+    edge [color = black;];
+    
+    // =========================
+    // Prefix legend (compact)
+    // =========================
+    subgraph cluster_prefixes {
+        label = "Prefixes";
+        style = dashed;
+        color = "#aaaaaa";
+        
+        pref1 [shape = plaintext;label = ":            https://ld.openmicroscopy.org/omekg/";];
+        pref2 [shape = plaintext;label = "ome_instance: https://example.org/site/";];
+        pref3 [shape = plaintext;label = "core:        https://ld.openmicroscopy.org/core/";];
+        pref4 [shape = plaintext;label = "this:        https://ld.openmicroscopy.org/omekg#";];
+        pref5 [shape = plaintext;label = "dc:          http://purl.org/dc/elements/1.1/";];
+        pref6 [shape = plaintext;label = "dcterms:     http://purl.org/dc/terms/";];
+        pref7 [shape = plaintext;label = "rdfs:        http://www.w3.org/2000/01/rdf-schema#";];
+        pref8 [shape = plaintext;label = "rdf:         http://www.w3.org/1999/02/22-rdf-syntax-ns#";];
+        pref9 [shape = plaintext;label = "xsd:         http://www.w3.org/2001/XMLSchema#";];
+        pref10 [shape = plaintext;label = "foaf:        http://xmlns.com/foaf/0.1/";];
+        pref11 [shape = plaintext;label = "skos:        http://www.w3.org/2004/02/skos/core#";];
+        pref12 [shape = plaintext;label = "vcard:       http://www.w3.org/2006/vcard/ns#";];
+        pref13 [shape = plaintext;label = "obda:        https://w3id.org/obda/vocabulary#";];
+        pref14 [shape = plaintext;label = "linkml:      https://w3id.org/linkml/";];
+        pref15 [shape = plaintext;label = "omekg:       https://ld.openmicroscopy.org/omekg/";];
+    }
+    
+    // =========================
+    // Visual hints
+    // =========================
+    // Optional tiny legend for shapes/colors (kept subtle)
+    subgraph cluster_legend {
+        label = "Visual Legend";
+        style = "dashed";
+        color = "#cccccc";
+        
+        cls [label = "Class (entity)";shape = box;style = "rounded,filled";fillcolor = white;];
+        lit [label = "Literal value";shape = ellipse;style = "filled";fillcolor = lightyellow;];
+        ann [label = "Flattened annotation value";shape = ellipse;style = "filled";fillcolor = "#e8f0ff";];
+        rel [label = "Structural link (black edge)\n  e.g., core:image";shape = plaintext;];
+        kv [label = "KV/Tag annotation (blue edge)\n  e.g., <ns/key>, this:tag_annotation_value";shape = plaintext;];
+    }
+}
