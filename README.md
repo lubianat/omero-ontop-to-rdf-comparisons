@@ -264,8 +264,68 @@ _Data are imported into OMERO using Bio-Formats. All metadata are read and, wher
 
 From there, it is possible to see that the Annotations in OMERO installations are indeed central, as they host anything that the OME Data Model was not able to capture beforehand. 
 
-(to be continued)
+There are many databases core to OMERO, a "Binary Repository" flat file storage, hosting the binary data for the images, a Lucene Search Index and _the OMERO relational database, normally run by PostgreSQL (http://www. postgresql.org/), [which] holds all metadata associated with the binary images, all user information and most simple annotations, and records all write transactions in the OMERO installation._
 
+The documentation page for the model on OMERO (https://omero.readthedocs.io/en/stable/developers/Model.html) clarifies how the OME Data Model relates to OMERO installations. It explains that
+
+_Conceptually, the XSD files under the components/specification source directory are the starting point for all code generation. Currently however, the files in https://github.com/ome/omero-model under https://github.com/ome/omero-model/tree/v5.7.0/src/main/resources/mappings are hand-written based on the XSD files._
+
+_The task created from the https://github.com/ome/omero-dsl-plugin/tree/v5.5.4/src Java files is then used to turn the mapping files into generated Java code in https://github.com/ome/omero-model under the build/classes/java/main directory. These classes are all within the ome.model package. A few hand-written Java classes can also be found in https://github.com/ome/omero-model/tree/v5.7.0/src/main/java/ome/model/internal._
+
+Continuing that, one can see the use of Ice on how different clients may interact with the database:
+
+_If we take a concrete example, a C++ client might create an Image via new omero::model::ImageI(). The “I” suffix represents an “implementation” in the Ice naming scheme and this subclasses from omero::model::Image. This can be remotely passed to the server which will be deserialized as an omero.model.ImageI object. This will then get converted to an ome.model.core.Image, which can finally be persisted to the database._
+
+So Ice is a middleware that bridges clent code and an OMERO servers. I also asked GPT 5 to clarify a bit how it works:
+
+_Under the hood, the objects are defined in Java and exposed remotely through the Ice middleware. Ice acts as the bridge between client code (such as omero-py) and the OMERO server, serializing requests such as getName() or saveAndReturnObject() into a binary protocol (including abstracted types) and routing them to the server. On the server side, these calls are deserialized back into method invocations on the corresponding Java model classes, which then persist data into PostgreSQL or retrieve it from the database. This setup ensures that clients written in Python, Java, C++, or MATLAB all interact with the same underlying object model without having to deal directly with SQL or the physical database schema._
+
+The details of the implementation are rather complex — and perhaps unnecessary for the goal of comparing omero-ontop to omero-rdf. 
+
+It may suffice to see that https://omero.readthedocs.io/en/stable/developers/Model/EveryObject.html# lists the objects available through OMERO, following the OME Data Model and that additional information are added via Annotations (e.g. see https://omero.readthedocs.io/en/stable/developers/Model/KeyValuePairs.html).These are accessed via the patterns described in the OMERO API (https://omero.readthedocs.io/en/stable/developers/Modules/Api.html). OMERO.py follows the patterns (https://github.com/ome/omero-py)
+
+In omero-rdf, for example, the model is acessed via omero-py using the BlitzGateway (https://omero.readthedocs.io/en/stable/developers/PythonBlitzGateway.html). For example:
+
+```py
+import omero
+from omero.model import ProjectI
+from omero.rtypes import rstring
+p = ProjectI()
+p.setName(rstring("Omero Model Project"))   # attributes are all rtypes
+print(p.getName().getValue())               # getValue() to unwrap the rtype
+print(p.name.val)                           # short-hand
+
+from omero.gateway import ProjectWrapper
+project = ProjectWrapper(obj=p)             # wrap the model.object
+project.setName("Project Wrapper")          # Don't need to use rtypes
+print(project.getName())
+print(project.name)
+
+print(project._obj)                  # access the wrapped object with ._obj
+```
+
+The gateway does some nice things, like hiding the use of `rstring` and other `rtypes` (the "remote types" abstraction that are needed for Ice to convert the OME Model between languages). For example, ProjectWrapper wraps the objects created with ProjectI(). A small note is that the "I" after Project (ProjectI) is an indication of the _client Implementation_ of a class that is read from the server. 
+
+Also, documentation says that the Blitz gateway was originally built for the [OMERO.web framework](https://omero.readthedocs.io/en/stable/developers/Web.html) but has not yet been extended to wrap every omero.model object with a specific Blitz Object Wrapper. OMERO.web is a Django application, so it is built around Python bindings for OMERO servers. 
+
+
+For example, in OMERO-RDF, the data is accessed like: 
+```py
+from omero.gateway import BlitzGateway, BlitzObjectWrapper
+from omero.model import Dataset, Image, IObject, Plate, Project, Screen
+
+# ... 
+
+        elif isinstance(target, Dataset):
+            # The _lookup gets the information about the dataset from OMERO
+            ds = self._lookup(gateway, "Dataset", target.id)
+
+            # The handler, then, processes the dataset information and gets an URI for the dataset in the RDF representation 
+            dsid = handler(ds)
+            ...
+```
+
+ONTOP, on the other hand, is a Java application that talks directly to the OMERO PostgreSQL instance via a JDBC driver. 
 
 ## The ontologies and namespaces related to OME 
 
