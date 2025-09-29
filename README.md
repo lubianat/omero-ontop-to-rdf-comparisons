@@ -861,21 +861,6 @@ Now let's continue with other interesting methods.
 #...
             return BNode()
 #...
-
-# Deciding between the OMERO and the OME URIs 
-    def get_key(self, key: str) -> Optional[URIRef]:
-
-        # Plus a few types that are omitted
-        if key in ("@type", "@id", "omero:details", "Annotations"):
-            # Types that we want to omit fo
-            return None
-        else:
-            if key.startswith("omero:"):
-                # clean the "omero:" prefix from the key
-                return URIRef(f"{self.OMERO}{key[6:]}")
-            else:
-                return URIRef(f"{self.OME}{key}")
-
     def get_type(self, data: Data) -> str:
         return data.get("@type", "UNKNOWN").split("#")[-1]
 
@@ -897,6 +882,496 @@ Now let's continue with other interesting methods.
 
 That is interesting. So, what is an IObject in the OMERO Model?
 
+After some web search, I got to: *IObject the base interface for persistent model objects (things stored in the database). Classes like Image, Dataset, or Project implement IObject.* This line is *convenience so the Handler can work whether it’s handed a raw OMERO object or the Blitz wrapper.*
+
+The Handle instances are also callable to get the data in the objects:
+
+
+```py
+    def __call__(self, o: BlitzObjectWrapper) -> URIRef:
+#...  
+            return self.handle(data)
+
+```
+
+
+Annotations in the objects are looped through individually. This is part of how OMERO-RDF handles annotations, which is may be  different from OMERO-ONTOP.
+
+
+```py 
+
+    def annotations(self, obj, objid):
+        """
+        Loop through all annotations and handle them individually.
+        """
+#... 
+            for annotation in obj.listAnnotations(None):
+                obj._loadAnnotationLinks() # Lazy loads annotation data from the server
+                annid = self(annotation)
+                self.contains(objid, annid) # Creates the triple with "hasParts" 
+```
+
+The self.contains() method is core to current OMERO-RDF functionality. It emits symmetric partonomy triples using <http://purl.org/dc/terms/>, as: 
+
+```py
+    def contains(self, parent, child):
+        """
+        Use emit to generate isPartOf and hasPart triples
+
+        TODO: add an option to only choose one of the two directions.
+        """
+        self.emit((child, DCTERMS.isPartOf, parent))
+        self.emit((parent, DCTERMS.hasPart, child))
+```
+
+
+than there is the handle method, inside the Handler class, that does the final emission of triples.
+It uses here the formatters we mentioned before:
+
+```py
+    def emit(self, triple: Triple):
+        if self.formatter.streaming:
+            print(self.formatter.serialize_triple(triple), file=self.filehandle)
+        else:
+            self.formatter.add(triple)
+
+    def handle(self, data: Data) -> URIRef:
+        """
+        Parses the data object into RDF triples.
+
+        Returns the id for the data object itself
+        """
+#...
+        for triple in self.rdf(_id, data):
+            if triple:
+                if None in triple:
+                    logging.debug("skipping None value: %s %s %s", triple)
+                else:
+                    self.emit(triple)
+
+        return _id
+```
+
+Sill in the methods, self.rdf() seems to be the method that actually turns data into triple objects before they are emitted. 
+
+Given a particular subjects (_id), the method yields the triples as `Generator[Triple, None, None]`
+
+```py
+
+    def yield_object_with_id(self, _id, key, v):
+        """
+        Yields a link to the object as well as its representation.
+        """
+        v_type = self.get_type(v)
+        val = self.get_identity(v_type, v["@id"])
+        yield (_id, key, val)
+        yield from self.rdf(_id, v)
+
+    def rdf(self, _id: Subj, data: Data) -> Generator[Triple, None, None]:
+
+        _type = self.get_type(data)
+
+# The annotations are handled separately in a workaround 
+        if "Annotation" in str(_type):
+            for ah in self.annotation_handlers:
+                handled = yield from ah(None, None, data,)
+                if self.first_handler_wins and handled:
+                    return
+# ... 
+
+       for k, v in sorted(data.items()):
+
+            if k == "@type":
+                yield (_id, RDF.type, URIRef(v))
+  
+            elif k in ("@id", "omero:details", "Annotations"):
+                # Types that we want to omit for now
+                pass
+
+# Deciding between the OMERO and the OME URIs and cleaning the "omero:" prefix from the key
+            else:
+                if k.startswith("omero:"):
+                    key = URIRef(f"{self.OMERO}{k[6:]}")
+                else:
+                    key = URIRef(f"{self.OME}{k}")
+
+# If the value is an object...
+                if isinstance(v, dict): 
+# Values that have an @id get an URI 
+                    if "@id" in v:
+                        yield from self.yield_object_with_id(_id, key, v)
+
+# Other values get a BNode
+                    else:
+                        bnode = self.get_bnode()
+                        yield (_id, key, bnode)
+                        yield from self.rdf(bnode, v)
+
+# If the value is a list... 
+                elif isinstance(v, list):
+
+# Assumes multiple values, adds them with the original key 
+                    for item in v:
+                        if isinstance(item, dict) and "@id" in item:
+                            yield from self.yield_object_with_id(_id, key, item)
+                        elif isinstance(item, list) and len(item) == 2:
+                            bnode = self.get_bnode()
+# There is a big TODO here, but these are handled with he OME:Map, OME:Key and OME:Value properties
+# The Key-Value pair gets in the RDF as literals, via OME:MAP to a BNode 
+# 
+# key:value then, becomes _id OME:Map [OME:Key "key"; OME:Value "value" . ] .  
+                            yield (_id, URIRef(f"{self.OME}Map"), bnode)
+                            yield (bnode, URIRef(f"{self.OME}Key"), self.literal(item[0]),)
+                            yield (bnode, URIRef(f"{self.OME}Value"),  self.literal(item[1]),
+                            )
+                        else:
+                            raise Exception(f"unknown list item: {item}")
+
+# Finally, if it is not an object nor a list
+                else:
+                    yield (_id, key, self.literal(v))
 
 
 
+        # Special handling for Annotations
+        annotations = data.get("Annotations", [])
+        for annotation in annotations:
+
+            handled = False
+            for ah in self.annotation_handlers:
+
+# Yields links from _id to the annotation via OME:annotation
+                handled = yield from ah(_id, URIRef(f"{self.OME}annotation"), annotation)
+                if handled:
+                    break
+
+# uses an "AnnotationTBD" as a default 
+
+            if not handled:  # TODO: could move to a default handler
+                aid = self.get_identity("AnnotationTBD", annotation["@id"])
+                yield (_id, URIRef(f"{self.OME}annotation"), aid)
+                yield from self.rdf(aid, annotation)
+
+
+```
+
+So it goes through different kinds of options, generating triples accordingly. 
+
+Annotations are handled differently, twice. First, if annotations are passed directly (say, a CommentAnnotation object) and in the second time, leaping through the annotations linked to the object there. 
+
+
+Now, finally, there is the RdfControl class, the one that stitches the bits together. It gets some byts from the [omero-py cli](https://github.com/ome/omero-py/blob/master/src/omero/cli.py) module.
+
+Before we get to that, it is useful to see it inherits the class BaseControl: 
+
+```py
+class BaseControl(object):
+    """Controls get registered with a CLI instance on loadplugins().
+
+    To create a new control, subclass BaseControl, implement _configure,
+    and end your module with::
+
+        try:
+            register("name", MyControl, HELP)
+        except:
+            if __name__ == "__main__":
+                cli = CLI()
+                cli.register("name", MyControl, HELP)
+                cli.invoke(sys.argv[1:])
+
+    This module should be put in the omero.plugins package.
+
+    All methods which do NOT begin with "_" are assumed to be accessible
+    to CLI users.
+    """
+# ...
+```
+
+So that is the baseline on which RdfControl is built. Also imported are ProxyStringType() and Parser(ArgumentParser), but we won't go on that rabbit hole now. 
+
+
+```py
+class RdfControl(BaseControl):
+    def _configure(self, parser: Parser) -> None:
+        parser.add_login_arguments()
+        rdf_type = ProxyStringType("Image")
+        rdf_help = "Object to be exported to RDF"
+        parser.add_argument("target", type=rdf_type, nargs="+", help=rdf_help)
+# ...
+
+# arguments: 
+# --format (from list),
+# --descent (recursive or flat)
+# --ellide (boolean; shortens strings)
+# --first-handler-wins (boolean; avoid duplicate annotations)
+# --trim-whitespace (boolean; trim literals)
+# --file (the target rdf file)
+        parser.set_defaults(func=self.action)
+
+# BlitzGateway decorator
+    @gateway_required
+    def action(self, args: Namespace) -> None:
+
+        with open_with_default(args.file) as fh:
+            handler = Handler(
+                self.gateway,
+# ...
+                filehandle=fh,
+            )
+            self.descend(self.gateway, args.target, handler)
+            handler.close()
+# ...
+
+# Then it descends, outputing URIRefs along the way 
+    def descend(self, gateway: BlitzGateway, target: IObject, handler: Handler,) -> URIRef:
+        """
+        Copied from omero-cli-render. Should be moved upstream
+        """
+
+# Recursively enter lists and run descend
+        if isinstance(target, list):
+            return [self.descend(gateway, t, handler) for t in target]
+
+# Skips if parsing is set to "flat"
+        if handler.skip_descent():
+            objid = handler(target)
+            logging.debug("skip descent: %s", objid)
+            return objid
+        else:
+# Increases the "self._descent_level" as it enters the nested hierarchy
+            handler.descending()
+
+```
+
+After this basic setup, RDFControl, via the descend method, enters on processing the particular entries on the OME Model.
+
+It follows a general pattern: 
+
+* First it checks if a target is an instance of a particular class [Screen, Plate, Project, Dataset, Image]
+* Then, it looks up the object and *handles* it. The handler does two things:
+  * More clearly, it returns an ID for the object
+  * But also, it goes through the object and *emits* the related triples
+
+* Then it lists the children for the object, if it has nested children:
+  * Screen -> Plate -> Well -> Image 
+  * Project -> Dataset -> Image
+  * Image -> Pixels 
+  * Image -> ROI -> Shape
+
+Nested levels are related with "contains" methods, or, in RDF-land, DCTERMS:hasPart
+
+Additionally, every object can contain (DCTERMS:hasPart) annotations
+
+Here is an example: 
+
+
+```py
+        if isinstance(target, Screen):
+            scr = self._lookup(gateway, "Screen", target.id)
+            scrid = handler(scr)
+            for plate in scr.listChildren():
+                pltid = self.descend(gateway, plate._obj, handler)
+                handler.contains(scrid, pltid)
+            handler.annotations(scr, scrid)
+            return scrid
+```
+
+Let's look at the handler call: 
+
+
+```py 
+    def __call__(self, o: BlitzObjectWrapper) -> URIRef:
+        c = self.get_class(o)
+        encoder = get_encoder(c)
+        if encoder is None:
+            raise Exception(f"unknown: {c}")
+        else:
+            data = encoder.encode(o)
+            return self.handle(data)
+```
+
+So, the data passed to self.handle is actually encoded from the object via this "encoder.encode(o)" function. 
+
+That commes via [omero-marshal](https://github.com/ome/omero-marshal), which provides *Extensible marshaling code to transform various OMERO objects into dictionaries which can then be marshalled using JSON or alternative encodings.*
+
+### Brief omero-marshall rabbit hole
+
+It seems that a baseline understanding of omero-marshall might be needed to understand the OMERO-RDF triple parsing.
+So, omero-marshall encoders inherit from a base "Encoder" class that looks like: 
+
+```py
+class Encoder(object):
+
+    TYPE = ''
+
+    def __init__(self, ctx):
+        self.ctx = ctx
+
+    def set_if_not_none(self, v, key, value):
+        if value is None:
+            return
+
+# Checks if the value is a remote type via ICE or a base unit
+        if isinstance(value, RType):
+            v[key] = value.getValue()
+        elif isinstance(value, UnitBase):
+            self.encode_unit(v, key, value)
+        else:
+            v[key] = value
+
+# Units get a TBD# namespace with the runtime class + name
+    def encode_unit(self, v, key, value):
+        v[key] = {
+            '@type': 'TBD#%s' % value.__class__.__name__,
+            'Unit': value.getUnit().name,
+            'Symbol': value.getSymbol(),
+            'Value': value.getValue()
+        }
+
+    def encode(self, obj):
+# Objects get the TYPE set as a class variable; these are specified in the child classes
+    def encode(self, obj):
+        v = {'@type': self.TYPE}
+        if hasattr(obj, 'id'):
+            obj_id = unwrap(obj.id)
+            if obj_id is not None:
+                v['@id'] = obj_id
+        if hasattr(obj, 'details') and obj.details is not None:
+            encoder = self.ctx.get_encoder(obj.details.__class__)
+            v['omero:details'] = encoder.encode(obj.details)
+
+        return v
+```
+
+The encode method "unwraps" the remote types into Python-native structures, a big dict with a JSON-LD feel to it.
+`@type` indicates the class, `@id` the object id and `omero:details` the extra details. 
+
+Coming back to OMERO-RDF, it gets the encoder for the particular class via: 
+
+```py
+  c = self.get_class(o)
+  encoder = get_encoder(c)
+```
+
+
+For the Screen class, [it](https://github.com/ome/omero-marshal/blob/57934f0fd75d0a3091d06b5e943094a27c56f328/omero_marshal/encode/encoders/screen.py) looks something like:
+
+```py
+class Screen201501Encoder(AnnotatableEncoder):
+
+# Legacy namespace for screens, it is overwritten below
+    TYPE = 'http://www.openmicroscopy.org/Schemas/SPW/2015-01#Screen'
+
+# It sets data in this format for the different bits of the object
+    def encode(self, obj):
+        v = super(Screen201501Encoder, self).encode(obj)
+        self.set_if_not_none(v, 'Name', obj.name)
+        self.set_if_not_none(v, 'Description', obj.description)
+        self.set_if_not_none(v, 'ProtocolDescription', obj.protocolDescription)
+        self.set_if_not_none(v, 'ProtocolIdentifier', obj.protocolIdentifier)
+#...
+
+# And then repeats it for the lower parts
+        if obj.isPlateLinksLoaded() and obj.sizeOfPlateLinks() > 0:
+            plates = list()
+            for plate_link in obj.copyPlateLinks():
+                plate = plate_link.child
+                plate_encoder = self.ctx.get_encoder(plate.__class__)
+                plates.append(
+                    plate_encoder.encode(plate)
+                )
+            v['Plates'] = plates
+        return v
+
+
+# In the 2016, the namespace was updated (woof! one namespace less to worry)
+class Screen201606Encoder(Screen201501Encoder):
+
+    TYPE = 'http://www.openmicroscopy.org/Schemas/OME/2016-06#Screen'
+
+
+```
+### Back from the omero-marshall rabbit hole
+
+Ok, we were at this code snippet below:
+
+```py
+    def __call__(self, o: BlitzObjectWrapper) -> URIRef:
+        c = self.get_class(o)
+        encoder = get_encoder(c)
+        if encoder is None:
+            raise Exception(f"unknown: {c}")
+        else:
+            data = encoder.encode(o)
+            return self.handle(data)
+```
+
+After getting the encoder from omero-marshal and encoding the data in a clearer format, it returns `self.handle(data)`.
+
+It is the handle function we mentionded before, which runs the generator `self.rdf(_id, data)` and processes the omero-marshal data into RDF.
+
+So, the handler returns the id and emits all the triples, generally following the omero-marshal model. 
+
+The id is used, them, to emit the `hasParts` triples 
+
+
+```py
+        elif isinstance(target, Plate):
+#... Do similar things for Plate
+            return pltid
+
+        elif isinstance(target, Project):
+#... Project
+            return prjid
+
+        elif isinstance(target, Dataset):
+#... Dataset
+            return dsid
+
+        elif isinstance(target, Image):
+#... and Image, with a detail on the _get_rois method (see below)
+            for roi in self._get_rois(gateway, img):
+                roiid = handler(roi)
+                handler.annotations(roi, roiid)
+                handler.contains(pixid, roiid)
+                for shape in roi.iterateShapes():
+                    shapeid = handler(shape)
+                    handler.annotations(shape, shapeid)
+                    handler.contains(roiid, shapeid)
+            return imgid
+
+        else:
+            self.ctx.die(111, "unknown target: %s" % target.__class__.__name__)
+```
+
+The only exception to the use of omero-marshall is the _get_rois method, which is implemented *de novo*: 
+
+```py
+
+    def _get_rois(self, gateway, img):
+        params = ParametersI()
+        params.addId(img.id)
+        # Separated the query syntax for highlighting
+        query = 
+```
+```sql
+
+        select r from Roi r
+                left outer join fetch r.annotationLinks as ral
+                left outer join fetch ral.child as rann
+                left outer join fetch r.shapes as s
+                left outer join fetch s.annotationLinks as sal
+                left outer join fetch sal.child as sann
+                     where r.image.id = :id
+```
+```py
+        return gateway.getQueryService().findAllByQuery(
+            query, params, {"omero.group": str(img.details.group.id.val)}
+        )
+```
+
+Okay. Now we have a good idea of the OMERO-RDF strategy for taking an OMERO database and converting it into RDF. 
+
+We should now take a look at the OMERO-ONTOP-mappings and understand the strategy there better.
+
+# The process of building a virtual knowledge graph on top of a relational database (done by OMERO-ONTOP)
