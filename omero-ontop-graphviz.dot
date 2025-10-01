@@ -13,170 +13,192 @@ digraph OMERO_OBDA_BEAUTIFUL {
     // Core entity classes
     // =========================
     subgraph cluster_entities {
-        label = "Core Entities (OBDA mapping)";
+        label = "Common OMERO-RDF / OMERO-ONTOP classes";
         style = filled;
         color = lightgrey;
         
-        Project [label = "Project\n(core:Project)";shape = box;style = "rounded,filled";fillcolor = white;];
-        Dataset [label = "Dataset\n(core:Dataset)";shape = box;style = "rounded,filled";fillcolor = white;];
-        Image [label = "Image\n(core:Image)";shape = box;style = "rounded,filled";fillcolor = white;];
-        Pixels [label = "Pixels\n(core:Pixels)";shape = box;style = "rounded,filled";fillcolor = white;];
-        ROI [label = "ROI\n(core:ROI)";shape = box;style = "rounded,filled";fillcolor = white;];
-        Channel [label = "Channel\n(core:Channel)";shape = box;style = "rounded,filled";fillcolor = white;];
-        Screen [label = "Screen\n(core:Screen)";shape = box;style = "rounded,filled";fillcolor = white;];
-        Plate [label = "Plate\n(core:Plate)";shape = box;style = "rounded,filled";fillcolor = white;];
-        Well [label = "Well\n(core:Well)";shape = box;style = "rounded,filled";fillcolor = white;];
-        WellSample [label = "WellSample\n(core:WellSample)";shape = box;style = "rounded,filled";fillcolor = white;];
-        PlateAcq [label = "PlateAcquisition\n(core:PlateAcquisition)";shape = box;style = "rounded,filled";fillcolor = white;];
-        Reagent [label = "Reagent\n(core:Reagent)";shape = box;style = "rounded,filled";fillcolor = white;];
-        Expmt [label = "Experimenter\n(core:Experimenter)";shape = box;style = "rounded,filled";fillcolor = white;];
-        ExpGrp [label = "ExperimenterGroup\n(core:ExperimenterGroup)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Project [label = "Project\n(omeld-core:Project)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Dataset [label = "Dataset\n(omeld-core:Dataset)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Image [label = "Image\n(omeld-core:Image)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Pixels [label = "Pixels\n(omeld-core:Pixels)";shape = box;style = "rounded,filled";fillcolor = white;];
+        ROI [label = "ROI\n(omeld-core:ROI)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Screen [label = "Screen\n(omeld-core:Screen)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Plate [label = "Plate\n(omeld-core:Plate)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Well [label = "Well\n(omeld-core:Well)";shape = box;style = "rounded,filled";fillcolor = white;];
+    }
+    // Tags flattened as literals
+    
+    edge [color = "#00000055";];
+    Dataset -> "Tag text" [label = "omeld-kg:tag_annotation_value";];
+    Image -> "Tag text" [label = "omeld-kg:tag_annotation_value";];
+    Project -> "Tag text" [label = "omeld-kg:tag_annotation_value";];
+    Screen -> "Tag text" [label = "omeld-kg:tag_annotation_value";];
+    Plate -> "Tag text" [label = "omeld-kg:tag_annotation_value";];
+    PlateAcq -> "Tag text" [label = "omeld-kg:tag_annotation_value";];
+    Reagent -> "Tag text" [label = "omeld-kg:tag_annotation_value";];
+    Well -> "Tag text" [label = "omeld-kg:tag_annotation_value";];
+    edge [color = "#000000";];
+    
+    subgraph cluster_entities_2 {
+        label = "Only on OMERO-ONTOP classes";
+        style = filled;
+        color = lightgreen;
+        
+        Channel [label = "Channel\n(omeld-core:Channel)";shape = box;style = "rounded,filled";fillcolor = white;];
+        WellSample [label = "WellSample\n(omeld-core:WellSample)";shape = box;style = "rounded,filled";fillcolor = white;];
+        PlateAcq [label = "PlateAcquisition\n(omeld-core:PlateAcquisition)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Reagent [label = "Reagent\n(omeld-core:Reagent)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Expmtr [label = "Experimenter\n(omeld-core:Experimenter)";shape = box;style = "rounded,filled";fillcolor = white;];
+        ExpGrp [label = "ExperimenterGroup\n(omeld-core:ExperimenterGroup)";shape = box;style = "rounded,filled";fillcolor = white;];
+        
+        
+        
+        Channel -> "xsd:integer" [label = "omeld-kg:red";];
+        Channel -> "xsd:integer" [label = "omeld-kg:green";];
+        Channel -> "xsd:integer" [label = "omeld-kg:blue";];
+        "xsd:integer" [shape = ellipse;style = "filled";fillcolor = "lightyellow";];
+        "xsd:string" [shape = ellipse;style = filled;fillcolor = lightyellow;];
     }
     
     // =========================
     // Structural relationships
     // =========================
     // Datasets & Images
-    Dataset -> Image [label = "core:image";];
+    Dataset -> Image [label = "omeld-core:image";];
     
     // Projects ↔ Datasets
-    Project -> Dataset [label = "core:dataset";];
+    Project -> Dataset [label = "omeld-core:dataset";];
     
     // Pixels / Image / ROI / Channel
-    Pixels -> Image [label = "this:image";];
-    ROI -> Image [label = "core:image";];
-    Channel -> Pixels [label = "this:pixels";];
+    Pixels -> Image [label = "omeld-kg:image";];
+    ROI -> Image [label = "omeld-core:image";];
+    Channel -> Pixels [label = "omeld-kg:pixels";];
     
     // Screens, Plates, Wells
-    Well -> Plate [label = "core:plate";];
+    Well -> Plate [label = "omeld-core:plate";];
     // Plate ↔ Screen (both directions exist in mappings)
-    Plate -> Screen [dir = both; label = "core:plate / this:screen";];
+    Plate -> Screen [dir = both; label = "omeld-core:plate / omeld-kg:screen";];
     
     // WellSample joins
-    WellSample -> Well [label = "core:well";];
-    WellSample -> PlateAcq [label = "core:run";];
-    WellSample -> Image [label = "core:image";];
+    WellSample -> Well [label = "omeld-core:well";];
+    WellSample -> PlateAcq [label = "omeld-core:run";];
+    WellSample -> Image [label = "omeld-core:image";];
     
     // Reagents linked from Wells
-    Well -> Reagent [label = "this:reagent";];
+    Well -> Reagent [label = "omeld-kg:reagent";];
     
     // Ownership & Group (pattern shown on representative nodes)
-    Project -> Expmt [label = "core:owner";];
-    Project -> ExpGrp [label = "core:group";];
-    Image -> Expmt [label = "core:owner";];
-    Image -> ExpGrp [label = "core:group";];
+    Project -> Expmtr [label = "omeld-core:owner";];
+    Project -> ExpGrp [label = "omeld-core:group";];
+    
+    ExpGrp -> "xsd:string" [label = "foaf:name";];
+    
+    Expmtr -> "xsd:string" [label = "foaf:firstName";];
+    Expmtr -> "xsd:string" [label = "foaf:lastName";];
+    Expmtr -> "xsd:string" [label = "foaf:email";];
+    Expmtr -> "xsd:string" [label = "foaf:name";];
+    
+    
+    Image -> Expmtr [label = "omeld-core:owner";];
+    Image -> ExpGrp [label = "omeld-core:group";];
     
     // =========================
     // Metadata literals (representative)
     // =========================
+    edge [color = "#00000055";];
     Project -> "dc:identifier" [label = "dc:identifier";];
-    Project -> "rdfs:label" [label = "rdfs:label";];
-    Project -> "rdfs:comment" [label = "rdfs:comment";];
+    Project -> "Name" [label = "rdfs:label";];
+    Project -> "Object Description" [label = "rdfs:comment";];
     
     Dataset -> "dc:identifier" [label = "dc:identifier";];
-    Dataset -> "rdfs:label" [label = "rdfs:label";];
-    Dataset -> "rdfs:comment" [label = "rdfs:comment";];
+    Dataset -> "Name" [label = "rdfs:label";];
+    Dataset -> "Object Description" [label = "rdfs:comment";];
     
     Image -> "dc:identifier" [label = "dc:identifier";];
-    Image -> "rdfs:label" [label = "rdfs:label";];
-    Image -> "rdfs:comment" [label = "rdfs:comment";];
-    Image -> "this:acquisition_date" [label = "this:acquisition_date";];
+    Image -> "Name" [label = "rdfs:label";];
+    Image -> "Object Description" [label = "rdfs:comment";];
+    Image -> "xsd:dateTime" [label = "omeld-kg:acquisition_date";];
+    edge [color = "#000000";];
     
-    Channel -> "this:red" [label = "this:red";];
-    Channel -> "this:green" [label = "this:green";];
-    Channel -> "this:blue" [label = "this:blue";];
+    subgraph cluster_direct_literals {
+        label = "(some) literals";
+        style = filled;
+        color = lightgray;
+        
+        "Name" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+        "Object Description" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+        "dc:identifier" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+        "Tag text" [shape = ellipse;style = "filled";fillcolor = "lightyellow";];
+        "xsd:dateTime" [shape = ellipse;style = "filled";fillcolor = "lightyellow";];
+    }
     
-    Pixels -> "this:physical_size_x" [label = "this:physical_size_x";];
-    Pixels -> "this:physical_size_x_unit" [label = "this:physical_size_x_unit";];
-    Pixels -> "this:physical_size_y" [label = "this:physical_size_y";];
-    Pixels -> "this:physical_size_y_unit" [label = "this:physical_size_y_unit";];
-    Pixels -> "this:physical_size_z" [label = "this:physical_size_z";];
-    Pixels -> "this:physical_size_z_unit" [label = "this:physical_size_z_unit";];
     
-    // Literal node styling
-    "dc:identifier" [shape = ellipse;style = filled;fillcolor = lightyellow;];
-    "rdfs:label" [shape = ellipse;style = filled;fillcolor = lightyellow;];
-    "rdfs:comment" [shape = ellipse;style = filled;fillcolor = lightyellow;];
-    "this:acquisition_date" [shape = ellipse;style = filled;fillcolor = lightyellow;];
-    "this:red" [shape = ellipse;style = filled;fillcolor = lightyellow;];
-    "this:green" [shape = ellipse;style = filled;fillcolor = lightyellow;];
-    "this:blue" [shape = ellipse;style = filled;fillcolor = lightyellow;];
-    "this:physical_size_x" [shape = ellipse;style = filled;fillcolor = lightyellow;];
-    "this:physical_size_y" [shape = ellipse;style = filled;fillcolor = lightyellow;];
-    "this:physical_size_z" [shape = ellipse;style = filled;fillcolor = lightyellow;];
-    "this:physical_size_x_unit" [shape = ellipse;style = filled;fillcolor = lightyellow;];
-    "this:physical_size_y_unit" [shape = ellipse;style = filled;fillcolor = lightyellow;];
-    "this:physical_size_z_unit" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+    
+    
+    subgraph cluster_pixels {
+        label = "Statements for Pixels";
+        style = filled;
+        color = yellow;
+        
+        edge [color = "#00000055";];
+        Pixels -> "SizeX" [label = "omeld-kg:physical_size_x";];
+        Pixels -> "unit (xsd:string)" [label = "omeld-kg:physical_size_x_unit";];
+        Pixels -> "SizeY" [label = "omeld-kg:physical_size_y";];
+        Pixels -> "unit (xsd:string)" [label = "omeld-kg:physical_size_y_unit";];
+        Pixels -> "SizeZ" [label = "omeld-kg:physical_size_z";];
+        Pixels -> "unit (xsd:string)" [label = "omeld-kg:physical_size_z_unit";];
+        edge [color = "#000000";];
+        
+        "unit (xsd:string)" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+        "SizeX" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+        "SizeY" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+        "SizeZ" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+    }
+    
     
     // =========================
     // Flattened annotations (blue edges)
     // =========================
     edge [color = blue;];
     // Key–value annotations become dynamic predicates <namespace/key> with literal values.
-    Project -> "KV value" [label = "<ns/key>";];
-    Dataset -> "KV value" [label = "<ns/key>";];
-    Image -> "KV value" [label = "<ns/key>";];
-    Screen -> "KV value" [label = "<ns/key>";];
-    Plate -> "KV value" [label = "<ns/key>";];
-    PlateAcq -> "KV value" [label = "<ns/key>";];
-    Well -> "KV value" [label = "<ns/key>";];
-    Reagent -> "KV value" [label = "<ns/key>";];
+    Project -> "KV handling" [label = "parse annotation"; style = "dashed"; arrowhead = "none";];
+    Dataset -> "KV handling" [label = "parse annotation"; style = "dashed"; arrowhead = "none";];
+    Image -> "KV handling" [label = "parse annotation"; style = "dashed"; arrowhead = "none";];
+    Screen -> "KV handling" [label = "parse annotation"; style = "dashed"; arrowhead = "none";];
+    Plate -> "KV handling" [label = "parse annotation"; style = "dashed"; arrowhead = "none";];
+    PlateAcq -> "KV handling" [label = "parse annotation"; style = "dashed"; arrowhead = "none";];
+    Well -> "KV handling" [label = "parse annotation"; style = "dashed"; arrowhead = "none";];
+    Reagent -> "KV handling" [label = "parse annotation"; style = "dashed"; arrowhead = "none";];
     
-    // Tags flattened as literals
-    Dataset -> "Tag text" [label = "this:tag_annotation_value";];
-    Image -> "Tag text" [label = "this:tag_annotation_value";];
-    Project -> "Tag text" [label = "this:tag_annotation_value";];
-    Screen -> "Tag text" [label = "this:tag_annotation_value";];
-    Plate -> "Tag text" [label = "this:tag_annotation_value";];
-    PlateAcq -> "Tag text" [label = "this:tag_annotation_value";];
-    Reagent -> "Tag text" [label = "this:tag_annotation_value";];
-    Well -> "Tag text" [label = "this:tag_annotation_value";];
     
-    // Style for flattened annotation literal targets
-    "KV value" [shape = ellipse;style = "filled";fillcolor = "#e8f0ff";label = "Annotation value (flattened)";];
-    "Tag text" [shape = ellipse;style = "filled";fillcolor = "#e8f0ff";label = "Tag text";];
     
+    subgraph cluster_annotation {
+        label = "annotations handled as new URI + value";
+        color = lightblue;
+        style = filled;
+        
+        // Style for flattened annotation literal targets
+        "KV handling" [shape = ellipse;style = "filled";fillcolor = "#e8f0ff";label = "http://www.openmicroscopy.org/ns/default/{key}\n (property)";];
+        
+        "KV handling" -> "{value}^^xsd:string" [shape = ellipse; style = "filled"; fillcolor = "lightyellow";];
+        
+        "{value}^^xsd:string" [shape = ellipse;style = "filled";fillcolor = "lightyellow";];
+    }
     // Reset edge color
     edge [color = black;];
     
     // =========================
     // Prefix legend (compact)
     // =========================
+    
+    
     subgraph cluster_prefixes {
-        label = "Prefixes";
+        label = "Non-standard Prefixes";
         style = dashed;
         color = "#aaaaaa";
         
-        pref1 [shape = plaintext;label = ":            https://ld.openmicroscopy.org/omekg/";];
-        pref2 [shape = plaintext;label = "ome_instance: https://example.org/site/";];
-        pref3 [shape = plaintext;label = "core:        https://ld.openmicroscopy.org/core/";];
-        pref4 [shape = plaintext;label = "this:        https://ld.openmicroscopy.org/omekg#";];
-        pref5 [shape = plaintext;label = "dc:          http://purl.org/dc/elements/1.1/";];
-        pref6 [shape = plaintext;label = "dcterms:     http://purl.org/dc/terms/";];
-        pref7 [shape = plaintext;label = "rdfs:        http://www.w3.org/2000/01/rdf-schema#";];
-        pref8 [shape = plaintext;label = "rdf:         http://www.w3.org/1999/02/22-rdf-syntax-ns#";];
-        pref9 [shape = plaintext;label = "xsd:         http://www.w3.org/2001/XMLSchema#";];
-        pref10 [shape = plaintext;label = "foaf:        http://xmlns.com/foaf/0.1/";];
-        pref11 [shape = plaintext;label = "skos:        http://www.w3.org/2004/02/skos/core#";];
-        pref12 [shape = plaintext;label = "vcard:       http://www.w3.org/2006/vcard/ns#";];
-        pref13 [shape = plaintext;label = "obda:        https://w3id.org/obda/vocabulary#";];
-        pref14 [shape = plaintext;label = "linkml:      https://w3id.org/linkml/";];
-        pref15 [shape = plaintext;label = "omekg:       https://ld.openmicroscopy.org/omekg/";];
-    }
-    
-    // =========================
-    // Visual hints
-    // =========================
-    // Optional tiny legend for shapes/colors (kept subtle)
-    subgraph cluster_legend {
-        label = "Visual Legend";
-        style = "dashed";
-        color = "#cccccc";
-        
-        cls [label = "Class (entity)";shape = box;style = "rounded,filled";fillcolor = white;];
-        lit [label = "Literal value";shape = ellipse;style = "filled";fillcolor = lightyellow;];
-        ann [label = "Flattened annotation value";shape = ellipse;style = "filled";fillcolor = "#e8f0ff";];
-        rel [label = "Structural link (black edge)\n  e.g., core:image";shape = plaintext;];
-        kv [label = "KV/Tag annotation (blue edge)\n  e.g., <ns/key>, this:tag_annotation_value";shape = plaintext;];
+        pref3 [shape = plaintext;label = "omeld-core: https://ld.openmicroscopy.org/core/";];
+        pref4 [shape = plaintext;label = "omeld-kg: https://ld.openmicroscopy.org/omekg#";];
+        pref4 [shape = plaintext;label = "[implitic annotation URI prefix]: http://www.openmicroscopy.org/ns/default/";];
     }
 }

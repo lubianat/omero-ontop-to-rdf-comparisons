@@ -1374,4 +1374,350 @@ Okay. Now we have a good idea of the OMERO-RDF strategy for taking an OMERO data
 
 We should now take a look at the OMERO-ONTOP-mappings and understand the strategy there better.
 
-# The process of building a virtual knowledge graph on top of a relational database (done by OMERO-ONTOP)
+## The process of building a virtual knowledge graph on top of a relational database (done by OMERO-ONTOP)
+
+
+The OMERO-ONTOP-MAPPINGS repo turns an OMERO database into RDF through a different strategy. It does not create RDF files directly but, instead, use ONTOP to create a virtual knowledge graph. There is also a [blogpost](mpievolbio-scicomp.pages.gwdg.de/blog/post/20250627_lod4n4bi/) explaining generally why this is being done on the first place. 
+
+Driving now to the [ONTOP tutorial](https://ontop-vkg.org/tutorial/), it becomes clear that, besides a source database, there are three files needed for the plumbing: 
+
+
+* An ontology file (OWL, e.g. .ttl)
+* A mappings file (.obda)
+* A properties file (.properties), which configures the JDBC drivers
+
+This custom mapping language tells ONTOP the relations between the database and the ontology. 
+
+Here is one example mapping from the OMERO-ONTOP repository: 
+
+```
+mappingId	MAPID-Image-0
+target		ome_instance:Image/{image_id} this:acquisition_date {image_acquisitiondate}^^xsd:dateTime . 
+source		select
+			_image.id as image_id,
+			_image.acquisitiondate as image_acquisitiondate
+			from image as _image
+```
+
+Generally, identifiers become part of the URIs for objects in the database. This is similar to how OMERO-RDF deals with URIs; it is just important to make sure that the ome_instance prefix is the same as the host and that it uses "/" as the final separator.  
+
+As a refresher, OMERO-RDF uses `return URIRef(f"https://{self.info.host}/{_type}/{_id}")`. 
+
+For ONTOP, the way the IRI is constructed interferes directly with query performance or, in [their words](https://ontop-vkg.org/tutorial/mapping/uri-templates.html#manual-approach), *The choice of IRI templates may impact query complexity and performance, depending on whether joins have to be introduced to materialize those templates.* 
+
+Let's go through the .obda file and understand the mapping strategy: 
+
+
+```
+[MappingDeclaration] @collection [[
+mappingId	MAPID-classes
+target		ome_instance:{Cls}/{id} a core:{Cls} . 
+source		select id, concat(upper(left(cls,1)), right(cls, -1)) as Cls from (
+			(select id,tableoid::regclass::text as cls, group_id from pixels)
+			union
+			(select id,tableoid::regclass::text as cls, group_id from image)
+			union
+# ...
+			(select id,tableoid::regclass::text as cls, group_id from wellsample)
+			) as object
+			where group_id in (
+			select parent as group_id from groupexperimentermap
+			where child=0
+			)
+```
+
+So, each entry gets an id (`ome_instance:{Cls}/{id}`) and a type via `rdf:type` (`core:{Cls}`).
+The class itself comes from `tableoid::regclass::text`, which is basically the name of the table in PostgreSQL. 
+
+
+```
+target		
+ome_instance:{Cls}/{id} a core:{Cls} ; 
+                        dc:identifier {id}^^xsd:integer ; 
+                        rdfs:label {name}^^xsd:string ;
+                        rdfs:comment {description}^^xsd:string ;
+                        core:owner ome_instance:Experimenter/{owner_id} ;
+                        core:group ome_instance:ExperimenterGroup/{group_id} ;
+                        this:update_id {update_id}^^xsd:integer ;
+                        this:creation_id {creation_id}^^xsd:integer . 
+                       
+source		select id, ... from (
+#...
+			(select id,tableoid::regclass::text as cls, owner_id, group_id, update_id, creation_id, description, name from image)
+			union
+			(select id,tableoid::regclass::text as cls, owner_id, group_id, update_id, creation_id, description, name from project)
+#...
+			) as object
+			where group_id in (
+			select parent as group_id from groupexperimentermap
+			where child=0
+			)
+```
+
+Now we get a few more properties describing each entry. The local prefixes are: 
+
+```
+this:		https://ld.openmicroscopy.org/omekg#
+core:		https://ld.openmicroscopy.org/core/
+```
+
+These relations are not explicit in omero-rdf, though. They come as consequences of the choices in the OME Data Model which bubble up into the RDF graph.
+
+For example, instead of `rdfs:label`, omero-rdf uses `ome:Name`; 
+instead of `rdfs:comment`, it uses `ome:Description`.
+
+In a previous iteration of omero-rdf, there was a prototype for querying the graph, which relied on the output of omero-rdf: https://github.com/mpievolbio-scicomp/sparnatural-mpi/blob/main/mpi_graph/jointed-graphs.ttl. 
+
+For example, in this previous iteration, the labels and descriptions comes via dedicated properties: 
+
+```
+@prefix ns1: <http://www.openmicroscopy.org/rdf/2016-06/ome_core/> .
+@prefix ns2: <http://www.openmicroscopy.org/TBD/omero/> .
+
+<https://ome.evolbio.mpg.de/Image/27789> a <http://www.openmicroscopy.org/Schemas/OME/2016-06#Image> ;
+    ns2:series 0 ;
+    ns1:Description "" ;
+    ns1:Name "BER468_1Xylose_01_R3D_D3Dg.tif" .
+
+<https://ome.evolbio.mpg.de/FileAnnotation/1980255> a <http://www.openmicroscopy.org/Schemas/OME/2016-06#FileAnnotation> ;
+    ns1:Description "YAML file for bulk import of dataset 2873" ;
+    ns1:File <https://ome.evolbio.mpg.de/OriginalFile/14197635> ;
+    ns1:Namespace "/MouseCT/" .
+```
+
+
+The OMERO-ONTOP snipped before also adds `dc:identifier`, `core:owner`, `core:group`, `this:update_id` and `this:creation_id` which may not be represented in OMERO-RDF. 
+
+Continuing to navigate the mappings, it is possible to see a different strategy to link Project --> Dataset: 
+
+```
+mappingId	MAPID-project-1
+target		ome_instance:Project/{project_id} core:dataset ome_instance:Dataset/{dataset_id} . 
+source		select
+			_project.id as project_id,
+			_projectdatasetlink.child as dataset_id
+			from project as _project
+			left join projectdatasetlink as _projectdatasetlink on _project.id = _projectdatasetlink.parent
+```
+
+
+So, a hard-coded "core:dataset" property is used, whereas in omero-rdf this was done by DCTERMS:hasPart.
+
+Now, for annotations we find a slightly more intricate setup: 
+
+target:
+
+```ttl
+ome_instance:Project/{project_id} <{map_key}> {map_value}^^xsd:string . 
+```
+
+source:
+```sql
+select
+    _project.id as project_id,
+    concat(
+        regexp_replace(
+            case
+                when _annotation.ns is null
+                    then 'http://www.openmicroscopy.org/ns/default/'
+                when _annotation.ns ~ '^http[s]{0,1}:\/\/'
+                    then _annotation.ns
+                else 'http://www.openmicroscopy.org/ns/default/'
+            end,
+            '([^\/,#])$','\1/'
+        ),
+        regexp_replace(_annotation_mapvalue.name,'[^a-zA-Z0-9./_-]', 'ZZ', 'g')
+    ) as map_key,
+
+    _annotation_mapvalue.value as map_value
+
+			from project as _project
+			join projectannotationlink as _projectannotationlink on _projectannotationlink.parent = _project.id
+			join annotation as _annotation on _projectannotationlink.child = _annotation.id
+			join annotation_mapvalue as _annotation_mapvalue on _annotation.id = _annotation_mapvalue.annotation_id
+```
+
+While OMERO-RDF maps annotations using `ome:Key` and `ome:Key`, the OMERO-ONTOP mappings mint URIs for the keys on-the-fly. 
+
+For that, it uses another namespace: `http://www.openmicroscopy.org/ns/default/` if it is a string (or not an URI) or whatever namespace the annotation key may already be using (`_annotation.ns`). 
+
+This is a core difference between both workflows. The pattern is repeated for instances of `Dataset`, `Image`, `Well`, `Plate`, `Screen`, `Reagent` and `PlateAcquisition`, connecting these kind of objects to annotations
+
+Now the .obda file enters the specification of triples about Images. 
+
+### OMERO-ONTOP Images 
+For example, it uses `this:acquisition_date` to extract the `xsd:dateTime` for acquisition, this is the `https://ld.openmicroscopy.org/omekg#` prefix:
+
+```
+mappingId	MAPID-Image-0
+target		ome_instance:Image/{image_id} this:acquisition_date {image_acquisitiondate}^^xsd:dateTime . 
+source		select
+			_image.id as image_id,
+			_image.acquisitiondate as image_acquisitiondate
+			from image as _image
+```
+
+I could not figure out how this is information is represented (if at all) on omero-rdf, but it is there on the OMERO-ONTOP mappings. 
+
+Here are some target statements from the .OBDA file that link to "ome_instance:Image{image_id}" The source SQL was omitted, as it can generally be understood here from context.
+
+```
+this:		https://ld.openmicroscopy.org/omekg#
+core:		https://ld.openmicroscopy.org/core/
+
+ome_instance:Image/{image_id} this:tag_annotation_value {tag_text}
+
+ome_instance:Dataset/{dataset_id} core:image ome_instance:Image/{image_id} 
+
+ome_instance:WellSample/{wellsample_id} core:image ome_instance:Image/{image_id} 
+
+ome_instance:Pixels/{id} this:image ome_instance:Image/{image_id}
+
+ome_instance:ROI/{roi_id} core:image ome_instance:Image/{image_id} 
+```
+
+So it seems that `this:tag_annotation_value` is used to represent tags, the `core:image` property links Datasets, WellSamples and ROIs to Images and `this:image` links Pixels to Image. 
+
+The `this:tag_annotation_value` is also used on `Dataset`, `Project`, `Well`, etc.
+
+### Other objects on OMERO-ONTOP 
+
+```
+ome_instance:ExperimenterGroup/{experimentergroup_id} 
+            a :ExperimenterGroup ; 
+            dc:identifier {experimentergroup_id}^^xsd:integer ;
+            foaf:name {name}^^xsd:string .
+
+
+ome_instance:Experiment/{experiment_id} 
+            a :Experiment ; 
+            dc:identifier {experiment_id}^^xsd:integer .
+
+ome_instance:Experimenter/{id} a :Experimenter ; 
+            dc:identifier {id}^^xsd:integer ; 
+            foaf:firstName {firstname}^^xsd:string ; 
+            foaf:lastName {lastname}^^xsd:string ; 
+            foaf:email {email}^^xsd:string ; 
+            foaf:name {name}^^xsd:string . 
+source		select id, email, firstname, middlename, lastname, institution, concat("firstname", ' ', "lastname") as name from experimenter
+
+ome_instance:Well/{well_id} core:plate ome_instance:Plate/{plate_id} . 
+
+ome_instance:Channel/{id} 
+            a :Channel ;
+            dc:identifier {id}^^xsd:integer ;
+            this:blue {blue}^^xsd:integer ;
+            this:red {red}^^xsd:integer ;
+            this:green {green}^^xsd:integer ;
+            this:pixels ome_instance:Pixels/{pixels_id} . 
+
+ome_instance:Pixels/{id} 
+            a :Pixels ; 
+            this:image ome_instance:Image/{image_id} ; 
+            this:physical_size_x {physicalsizex}^^xsd:float ; 
+            this:physical_size_x_unit {physicalsizexunit}^^xsd:string ; 
+            this:physical_size_y {physicalsizey}^^xsd:float ; 
+            this:physical_size_y_unit {physicalsizeyunit}^^xsd:string ; 
+            this:physical_size_z {physicalsizez}^^xsd:float ; 
+            this:physical_size_z_unit {physicalsizezunit}^^xsd:string . 
+```
+
+Oh, here we have something interesting again. 
+
+On the sample OMERO-RDF, this is how a Pixels object looks like:
+
+```
+<https://ome.evolbio.mpg.de/Pixels/4684881> a <http://www.openmicroscopy.org/Schemas/OME/2016-06#Pixels> ;
+    dcterms:isPartOf <https://ome.evolbio.mpg.de/Image/4684931> ;
+    ns2:sha1 "49fbe3ecfbdcb83f8013e62dad3a038038c28560" ;
+    ns1:PhysicalSizeX [ ] ;
+    ns1:PhysicalSizeY [ ] ;
+    ns1:SignificantBits 16 ;
+    ns1:SizeC 1 ;
+    ns1:SizeT 1 ;
+    ns1:SizeX 1008 ;
+    ns1:SizeY 672 ;
+    ns1:SizeZ 1 ;
+    ns1:Type <https://ome.evolbio.mpg.de/PixelsType/6> .
+```
+It is generated by a snippet that says 
+
+```py
+if img.getPrimaryPixels() is not None:
+    pixid = handler(img.getPrimaryPixels())
+    handler.contains(imgid, pixid)
+```
+So, there `PhysicalSizeX` points to a [ ] and the `PhysicalSizeXUnit` is not there.
+The [omero-marshal encoder for Pixels](https://github.com/ome/omero-marshal/blob/master/omero_marshal/encode/encoders/pixels.py)
+
+The [omero-gateway wrapper](https://github.com/ome/omero-py/blob/master/src/omero/gateway/__init__.py) seems to normalize the PhysicalSizeX (and Y and Z) in microns.
+
+```py
+    @assert_pixels
+    def getPixelSizeX(self, units=None):
+        """
+        Gets the physical size X of pixels in microns.
+        If units is True, or a valid length, e.g. "METER"
+        return omero.model.LengthI.
+
+        :return:    Size of pixel in x or None
+        :rtype:     float or omero.model.LengthI
+        """
+        return self._unwrapunits(
+            self._obj.getPrimaryPixels().getPhysicalSizeX(), units)
+```
+
+While the getPrimaryPixels() method: 
+
+```
+    @assert_pixels
+    def getPrimaryPixels(self):
+        """
+        Loads pixels and returns object in a :class:`PixelsWrapper`
+        """
+        return PixelsWrapper(self._conn, self._obj.getPrimaryPixels())
+```
+
+
+Diving into this may be a bit beyond the scope here. 
+
+This is basically what gets currently in as triples in the OMERO-ONTOP mappings schema. 
+
+I think at this point we may move towards a summary of the differences.
+
+# Quick summary of core differences
+
+Throughout the bullet points, (1) refers to omero-rdf, (2) refers to omero-ontop
+
+* Different namespaces for similar / identical things
+  * (1) http://www.openmicroscopy.org/rdf/2016-06/ome_core/ (legacy)
+  * (1) http://www.openmicroscopy.org/Schemas/OME/2016-06# (to be used in place of /rdf/)
+  * (2) https://ld.openmicroscopy.org/core/
+
+* Besides these namespaces, there are many other namespaces used here and there
+
+* Nesting parts are organized with "DCTERMS:hasPart" on OMERO-RDF and custom properties on the ONTOP mappings, e.g.:
+    * (1) Dataset --- DCTERMS:hasPart ---> Image 
+    * (2) Dataset --- core:Image ---> Image
+
+* Descriptions and labels are also handled with different properties, e.g.:
+
+    * (1) Image --- ome:Name ---> "name.ome.zarr" ; Image --- ome:Description ---> "the description" 
+    * (2) Image --- rdfs:label ---> "name.ome.zarr" ; Image --- rdfs:comment ---> "the description"
+
+* The OMERO-ONTOP mappings use a few other custom properties to link, say, a Project to an Experimenter (`core:owner`)
+
+* Key-Value annotations are handled in different ways:
+    * (1) Object --- ome:annotation ---> Blank Node 
+        * Blank Node --- ome:Value ---> "value"
+        * Blank Node --- ome:Key ---> "key"
+    * (2) Object ---> annotation_ns:"key" ---> "value"
+
+In other words, for the ontop mappings, the key become part of the property 
+
+    (If annotation keys are *controlled*, this modelling might be better. If they are free, though, minting URIs on-the-fly leads to unresolvable IDs)
+
+
+### To figure out
+
+* I am still not sure exactly how Pixel "PhysicalSizeX" and "PyisicalSizeXUnit" get in the omero-rdf model. 

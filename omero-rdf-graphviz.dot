@@ -9,22 +9,35 @@ digraph OMERO_RDF_COMPACT {
     
     // === Core Containers ===
     subgraph cluster_containers {
-        open;
-        label = "Core Containers";
+        label = "Common OMERO-RDF / OMERO-ONTOP classes";
         style = filled;
         color = lightgrey;
         
-        Project [label = "Project\n(OME:Project)";shape = box;style = "rounded,filled";fillcolor = white;];
-        Dataset [label = "Dataset\n(OME:Dataset)";shape = box;style = "rounded,filled";fillcolor = white;];
-        Image [label = "Image\n(OME:Image)";shape = box;style = "rounded,filled";fillcolor = white;];
-        Pixels [label = "Pixels\n(OME:Pixels)\n— detailed example";shape = box;style = "rounded,filled";fillcolor = white;];
-        ROI [label = "ROI\n(OME:ROI)";shape = box;style = "rounded,filled";fillcolor = white;];
-        Shape [label = "Shape\n(OME:Shape)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Project [label = "Project\n(ome-xml:Project)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Dataset [label = "Dataset\n(ome-xml:Dataset)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Image [label = "Image\n(ome-xml:Image)";shape = box;style = "rounded,filled";fillcolor = white;];
         
-        Screen [label = "Screen\n(OME:Screen)";shape = box;style = "rounded,filled";fillcolor = white;];
-        Plate [label = "Plate\n(OME:Plate)";shape = box;style = "rounded,filled";fillcolor = white;];
-        Well [label = "Well\n(OME:Well)";shape = box;style = "rounded,filled";fillcolor = white;];
+        
+        Image -> "Series" [label = "omero-tbd:series";];
+        "Series" [shape = ellipse;style = filled;fillcolor = lightyellow;];
+        
+        Pixels [label = "Pixels\n(ome-xml:Pixels)\n— detailed example";shape = box;style = "rounded,filled";fillcolor = white;];
+        ROI [label = "ROI\n(ome-xml:ROI)";shape = box;style = "rounded,filled";fillcolor = white;];
+        
+        Screen [label = "Screen\n(ome-xml:Screen)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Plate [label = "Plate\n(ome-xml:Plate)";shape = box;style = "rounded,filled";fillcolor = white;];
+        Well [label = "Well\n(ome-xml:Well)";shape = box;style = "rounded,filled";fillcolor = white;];
     }
+    
+    
+    subgraph cluster_entities_2 {
+        label = "Only on OMERO-RDF classes";
+        style = filled;
+        color = lightgreen;
+        
+        Shape [label = "Shape\n(ome:Shape)";shape = box;style = "rounded,filled";fillcolor = white;];
+    }
+    
     
     // === Containment (double arrows) ===
     Project -> Dataset [label = "dcterms:hasPart";];
@@ -38,43 +51,41 @@ digraph OMERO_RDF_COMPACT {
     Well -> Image [label = "dcterms:hasPart";];
     
     // === Metadata (shared literals) ===
-    Project -> "Name" [label = "omopenopene:Name";];
-    Project -> "Object Description" [label = "ome:Description";];
     
-    Dataset -> "Name" [label = "ome:Name";];
-    Dataset -> "Object Description" [label = "ome:Description";];
+    edge [color = "#00000055";];
+    Dataset -> "Object Description" [label = "ome-rdf:Description";];
+    Project -> "Object Description" [label = "ome-rdf:Description";];
+    Image -> "Object Description" [label = "ome-rdf:Description";];
+    ROI -> "Object Description" [label = "ome-rdf:Description";];
+    Project -> "Name" [label = "ome-rdf:Name";];
+    Dataset -> "Name" [label = "ome-rdf:Name";];
+    ROI -> "Name" [label = "ome-rdf:Name";];
+    Image -> "Name" [label = "ome-rdf:Name";];
+    edge [color = "#000000";];
     
-    Image -> "Name" [label = "ome:Name";];
-    Image -> "Object Description" [label = "ome:Description";];
-    
-    ROI -> "Name" [label = "ome:Name";];
-    ROI -> "Object Description" [label = "ome:Description";];
     
     // === Pixels attributes (explicit example) ===
     subgraph cluster_pixels {
-        open;
-        label = "Expanded example for Pixels";
+        label = "Expanded example for Pixels\n (I am not really sure on the details for size and time increment)";
         style = filled;
         color = yellow;
         
         "Pixels …" [shape = note;style = filled;fillcolor = yellow;];
-        openopenopenopenopen;
-        Pixels -> "SizeX" [label = "ome:SizeX";];
-        Pixels -> "SizeY" [label = "ome:SizeY";];
-        Pixels -> "SizeZ" [label = "ome:SizeZ";];
-        Pixels -> "SizeC" [label = "ome:SizeC [enum]";];
-        Pixels -> "SizeT" [label = "ome:SizeT";];
-        Pixels -> "PhysicalSizeX" [label = "ome:PhysicalSizeX (bNode)";];
-        Pixels -> "PhysicalSizeY" [label = "ome:PhysicalSizeY (bNode)";];
-        Pixels -> "PhysicalSizeZ" [label = "ome:PhysicalSizeZ (bNode)";];
-        Pixels -> "TimeIncrement" [label = "ome:TimeIncrement (bNode)";];
-        Pixels -> "Type" [label = "ome:Type [enum]";];
-        Pixels -> "sha1" [label = "omero:sha1";];
-        Pixels -> "SignificantBits" [label = "ome:SignificantBits";];
+        Pixels -> "SizeX" [label = "ome-rdf:SizeX";];
+        Pixels -> "SizeY" [label = "ome-rdf:SizeY";];
+        Pixels -> "SizeZ" [label = "ome-rdf:SizeZ";];
+        Pixels -> "SizeC" [label = "ome-rdf:SizeC [enum]";];
+        Pixels -> "SizeT" [label = "ome-rdf:SizeT";];
+        Pixels -> "PhysicalSizeX" [label = "ome-rdf:PhysicalSizeX (bNode)";];
+        Pixels -> "PhysicalSizeY" [label = "ome-rdf:PhysicalSizeY (bNode)";];
+        Pixels -> "PhysicalSizeZ" [label = "ome-rdf:PhysicalSizeZ (bNode)";];
+        Pixels -> "TimeIncrement" [label = "ome-rdf:TimeIncrement (bNode)";];
+        Pixels -> "Type" [label = "ome-rdf:Type [enum]";];
+        Pixels -> "sha1" [label = "omero-tbd:sha1";];
+        Pixels -> "SignificantBits" [label = "ome-rdf:SignificantBits";];
     }
     
     subgraph cluster_direct_literals {
-        openopen;
         style = filled;
         color = lightgray;
         
@@ -109,7 +120,7 @@ digraph OMERO_RDF_COMPACT {
     Well -> "Well …" [style = dotted;];
     
     subgraph cluster_extra {
-        label = "Additional information from OMERO-Marshal / OMERO Model";
+        label = "Additional information from OMERO-Marshal / OME Model";
         style = filled;
         color = lightgray;
         
@@ -123,10 +134,9 @@ digraph OMERO_RDF_COMPACT {
         "Plate …" [shape = note;style = filled;fillcolor = yellow;];
         "Well …" [shape = note;style = filled;fillcolor = yellow;];
     }
-    open;
     // === Annotations ===
     subgraph cluster_annotations {
-        label = "Annotations";
+        label = "Processing of Annotations";
         style = filled;
         color = lightblue;
         
@@ -137,34 +147,34 @@ digraph OMERO_RDF_COMPACT {
         Annotation -> CommentAnnotation [arrowhead = none;];
         Annotation -> FileAnnotation [arrowhead = none;];
         
-        MapAnnotation [label = "MapAnnotation\n(ome:MapAnnotation)";shape = box;style = "rounded,filled";fillcolor = white;];
-        XmlAnnotation [label = "XmlAnnotation\n(ome:XmlAnnotation)";shape = box;style = "rounded,filled";fillcolor = white;];
-        TagAnnotation [label = "TagAnnotation\n(ome:TagAnnotation)";shape = box;style = "rounded,filled";fillcolor = white;];
-        CommentAnnotation [label = "CommentAnnotation\n(ome:CommentAnnotation)";shape = box;style = "rounded,filled";fillcolor = white;];
-        FileAnnotation [label = "FileAnnotation\n(ome:FileAnnotation)";shape = box;style = "rounded,filled";fillcolor = white;];
+        MapAnnotation [label = "MapAnnotation\n(ome-xml:MapAnnotation)";shape = box;style = "rounded,filled";fillcolor = white;];
+        XmlAnnotation [label = "XmlAnnotation\n(ome-xml:XmlAnnotation)";shape = box;style = "rounded,filled";fillcolor = white;];
+        TagAnnotation [label = "TagAnnotation\n(ome-xml:TagAnnotation)";shape = box;style = "rounded,filled";fillcolor = white;];
+        CommentAnnotation [label = "CommentAnnotation\n(ome-xml:CommentAnnotation)";shape = box;style = "rounded,filled";fillcolor = white;];
+        FileAnnotation [label = "FileAnnotation\n(ome-xml:FileAnnotation)";shape = box;style = "rounded,filled";fillcolor = white;];
         
         // MapAnnotation details
-        MapAnnotation -> "Namespace" [label = "ome:Namespace";];
-        MapAnnotation -> "Map" [label = "ome:Map";];
+        MapAnnotation -> "Namespace" [label = "ome-rdf:Namespace";];
+        MapAnnotation -> "Map" [label = "ome-rdf:Map";];
         MapAnnotation -> "P703 value" [label = "wd:P703 (found in taxon)";];
-        MapAnnotation -> "Annotation Description" [label = "ome:Description";];
+        MapAnnotation -> "Annotation Description" [label = "ome-rdf:Description";];
         
         "Map" [shape = circle;style = "dashed,filled";fillcolor = lightblue;];
         "Key" [shape = ellipse;style = filled;fillcolor = lightyellow;];
         "Value" [shape = ellipse;style = filled;fillcolor = lightyellow;];
-        "Map" -> "Key" [label = "ome:Key"; style = dashed;];
-        "Map" -> "Value" [label = "ome:Value"; style = dashed;];
+        "Map" -> "Key" [label = "ome-rdf:Key"; style = dashed;];
+        "Map" -> "Value" [label = "ome-rdf:Value"; style = dashed;];
         
-        XmlAnnotation -> "XML Blob" [label = "ome:Value";];
-        XmlAnnotation -> "Namespace" [label = "ome:Namespace";];
+        XmlAnnotation -> "XML Blob" [label = "ome-rdf:Value";];
+        XmlAnnotation -> "Namespace" [label = "ome-rdf:Namespace";];
         
-        TagAnnotation -> "Value" [label = "ome:Value";];
-        TagAnnotation -> "Annotation Description" [label = "ome:Description";];
+        TagAnnotation -> "Value" [label = "ome-rdf:Value";];
+        TagAnnotation -> "Annotation Description" [label = "ome-rdf:Description";];
         
-        CommentAnnotation -> "Value" [label = "ome:Value";];
+        CommentAnnotation -> "Value" [label = "ome-rdf:Value";];
         
-        FileAnnotation -> "File" [label = "ome:File";];
-        FileAnnotation -> "Annotation Description" [label = "ome:Description";];
+        FileAnnotation -> "File" [label = "ome-rdf:File";];
+        FileAnnotation -> "Annotation Description" [label = "ome-rdf:Description";];
         
         "Namespace" [shape = ellipse;style = filled;fillcolor = lightyellow;];
         "Annotation Description" [shape = ellipse;style = filled;fillcolor = lightyellow;];
@@ -173,25 +183,26 @@ digraph OMERO_RDF_COMPACT {
     }
     
     // === Annotation edges (blue) ===
-    edge [color = blue;];
-    Project -> Annotation [label = "ome:annotation";];
-    Dataset -> Annotation [label = "ome:annotation";];
-    Image -> Annotation [label = "ome:annotation";];
-    ROI -> Annotation [label = "ome:annotation";];
-    Shape -> Annotation [label = "ome:annotation";];
-    Screen -> Annotation [label = "ome:annotation";];
-    Plate -> Annotation [label = "ome:annotation";];
-    Well -> Annotation [label = "ome:annotation";];
+    edge [color = "#0000ff55";];
+    Project -> Annotation [label = "ome-rdf:annotation";];
+    Dataset -> Annotation [label = "ome-rdf:annotation";];
+    Image -> Annotation [label = "ome-rdf:annotation";];
+    ROI -> Annotation [label = "ome-rdf:annotation";];
+    Shape -> Annotation [label = "ome-rdf:annotation";];
+    Screen -> Annotation [label = "ome-rdf:annotation";];
+    Plate -> Annotation [label = "ome-rdf:annotation";];
+    Well -> Annotation [label = "ome-rdf:annotation";];
     
     edge [color = black;];
     
     // === Prefixes Legend ===
     subgraph cluster_legend {
-        label = "Prefixes";
+        label = "Non-standard Prefixes\n (ome-rdf and omero-tdb soon to be deprecated)";
         style = dashed;
         "dcterms:" [shape = plaintext;label = "dcterms: http://purl.org/dc/terms/";];
-        "ome:" [shape = plaintext;label = "ome: http://www.openmicroscopy.org/rdf/2016-06/ome_core/";];
-        "omero:" [shape = plaintext;label = "omero: http://www.openmicroscopy.org/TBD/omero/";];
+        "ome-rdf:" [shape = plaintext;label = "ome-rdf: http://www.openmicroscopy.org/rdf/2016-06/ome_core/";];
+        "ome-xml" [shape = plaintext;label = "ome-xml: http://www.openmicroscopy.org/Schemas/OME/2016-06#";];
+        "omero-tbd:" [shape = plaintext;label = "omero-tbd: http://www.openmicroscopy.org/TBD/omero/";];
         "wd:" [shape = plaintext;label = "wd: http://www.wikidata.org/prop/direct/";];
     }
 }

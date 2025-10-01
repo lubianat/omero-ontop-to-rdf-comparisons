@@ -1,2 +1,5 @@
 *.ttl
 *.xsd
+*.obda
+*.properties
+*.sh
