@@ -200,6 +200,6 @@ digraph OMERO_ONTOP {
         
         pref3 [shape = plaintext;label = "omeld-core: https://ld.openmicroscopy.org/core/";];
         pref4 [shape = plaintext;label = "omeld-kg: https://ld.openmicroscopy.org/omekg#";];
-        pref4 [shape = plaintext;label = "[implitic annotation URI prefix]: http://www.openmicroscopy.org/ns/default/";];
+        pref5 [shape = plaintext;label = "[implitic annotation URI prefix]: http://www.openmicroscopy.org/ns/default/";];
     }
 }
