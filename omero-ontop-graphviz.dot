@@ -1,6 +1,7 @@
 // BUILT UPON BASELINE BY CHAT GPT - 5
 // NEEDS MORE REVIEWS
-digraph OMERO_OBDA_BEAUTIFUL {
+digraph OMERO_ONTOP {
+    label = "OMERO-ONTOP mappings schema";
     rankdir = LR;
     fontname = "Helvetica";
     
