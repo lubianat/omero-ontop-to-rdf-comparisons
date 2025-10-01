@@ -179,7 +179,7 @@ digraph OMERO_ONTOP {
         style = filled;
         
         // Style for flattened annotation literal targets
-        "KV handling" [shape = ellipse;style = "filled";fillcolor = "#e8f0ff";label = "http://www.openmicroscopy.org/ns/default/{key}\n (property)";];
+        "KV handling" [shape = ellipse;style = "filled";fillcolor = "#e8f0ff";label = "omens:{key}\n (property)";];
         
         "KV handling" -> "{value}^^xsd:string" [shape = ellipse; style = "filled"; fillcolor = "lightyellow";];
         
@@ -200,6 +200,6 @@ digraph OMERO_ONTOP {
         
         pref3 [shape = plaintext;label = "omeld-core: https://ld.openmicroscopy.org/core/";];
         pref4 [shape = plaintext;label = "omeld-kg: https://ld.openmicroscopy.org/omekg#";];
-        pref5 [shape = plaintext;label = "[implitic annotation URI prefix]: http://www.openmicroscopy.org/ns/default/";];
+        pref5 [shape = plaintext;label = "omens: http://www.openmicroscopy.org/ns/default/";];
     }
 }
