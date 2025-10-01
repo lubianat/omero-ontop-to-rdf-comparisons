@@ -1,6 +1,6 @@
-Disclaimer: Ontologies and schemas in this repository are provided under multiple different.
+Disclaimer: The .xsd file in this repository comes is licensed under  Copyright (C) 2002 - 2016 Open Microscopy Environment
+(Creative Commons Attribution 3.0 Unported License.)
 
-The .ttl (Turtle) ontology files come from https://github.com/German-BioImaging/ome-owl. 
 
 # Comparison of the OMERO-ONTOP and OMERO-RDF
 
@@ -34,8 +34,6 @@ An XML representation of it was chosen, following XML's popularity at the time. 
 
 _"Modern browsers incorporate XML parsers, and are able to display the information contained in XML with the use of a style sheet (...). The use of XML also allows us to take advantage of its growing popularity in various unrelated fields - including a great deal of software written for XML, including databases, editing tools, and parsing libraries. Finally, and perhaps most important, XML is a plain-text format. As a last resort, it can be opened in any text editor and the information it contains can simply be read by a person. This inherent openness is one of its most desirable features for representing scientific data."_
 
-As a personal note, while XML may not be everyone's favourite format in 2025, it was perhaps the most user-friendly format back in the days. 
-
 The OME Data Model has evolved since 2005 and the latest version can be seen at https://docs.openmicroscopy.org/ome-model/latest/. 
 As of September 2025, that is OME Data Model and File Formats 6.3.  An overview of the data model can be seen at https://ome-model.readthedocs.io/en/stable/developers/model-overview.html. 
 
@@ -52,19 +50,19 @@ The current OME model clarifies a bit some changes from the original OME-XML for
 _"XML('s) human-readable design is often at odds with the storage of binary data. Since the bulk of an image file is represented by the pixels in the image and not the metadata, this might be perceived as a serious problem"
 
 The problems was circumvented by using compression schemas, like gzip or bzip2, but the community wished for more performant variants. 
-This was the point where TIFF entered the stage and the OME-TIFF specification appeared (https://ome-model.readthedocs.io/en/latest/ome-tiff/specification.html). By 2009, [https://europepmc.org/backend/ptpmcrender.fcgi?accid=PMC3522875&blobtype=pdf an article by Jason Swedlow and colleagues] already mentioned that: 
+This was the point where TIFF entered the stage and the OME-TIFF specification appeared (https://ome-model.readthedocs.io/en/latest/ome-tiff/specification.html). By 2009, [an article by Jason Swedlow and colleagues](https://europepmc.org/backend/ptpmcrender.fcgi?accid=PMC3522875&blobtype=pdf) already mentioned that: 
 
 _"While [the OME-XML approach is] conceptually sound, a more pragmatic approach is to store binary data as TIFF and then link image metadata represented as OME-XML by including it within the TIFF image header or as a separate file (37)."_
 
 Of note reference 37 points to the currently broken URL http://www.loci.wisc.edu/ome/ome-tiff.html, which dated of 2008. 
 
-As of 2025, as [https://github.com/ome/ome-model-documentation/issues/5 explained by Josh Moore] the _Pixels_ object in OME-XML file can _"hold one of three types: 
+As of 2025, as [https://github.com/ome/ome-model-documentation/issues/5 explained by Josh Moore] the _Pixels_ object in OME-XML file can "hold one of three types: 
 
 * BinData: the original element of base64 encoded data. This was the "OME-XML as a file format" which has been superseded.
 
 * TiffData: a block which explains how a given element in the XML maps to an offset within the TIFF
 
-* MetadataOnly: such an OME-XML file has no direct link to the data it contains. However, this is used in OME-Zarr to embed OME metadata within the Zarr hierarchy. See https://ngff.openmicroscopy.org/0.5/index.html#bf2raw"_
+* MetadataOnly: such an OME-XML file has no direct link to the data it contains. However, this is used in OME-Zarr to embed OME metadata within the Zarr hierarchy. See https://ngff.openmicroscopy.org/0.5/index.html#bf2raw"
 
 From the OME-Zarr 0.5 specification, it is clear that files adhering to the format:
 
@@ -162,12 +160,7 @@ The <Image> specification already alludes to it:
         </xsd:annotation>
     </xsd:element>
 ```
-That is, annotations are optional and unbounded (there may be 0, 1 or many).
-
-There is also some relatively cryptic syntax like <xsdfu> and <manytomany/>, which ChatGPT 5 said are _not part of standard XML Schema but rather OMERO-specific extensions embedded inside <xsd:appinfo>. Standard XSD parsers ignore them, but OMERO’s code generation tools interpret them as ORM (object–relational mapping) hints. In this case, <manytomany/> marks the relationship between Image and Annotation as a many-to-many link, which in the relational database translates into a join table connecting images and annotations.
-In other words, this snippet shows the dual nature of the OME-XML schema:
-* Validation layer → ensures OME-XML metadata files are structurally valid.
-* Metadata layer → provides machine-readable hints that allow the schema to be projected into other models (Java classes, database schemas, RDF graphs, etc.)._
+That is, annotations are optional and unbounded (there may be 0, 1 or many).There is also some relatively cryptic syntax like <xsdfu> and <manytomany/>, but probably not worth digging too much into that now. 
  
 This ties neatly into the second part of the investigation: how the OME-XML metadata model is actually used in OMERO-Server PostgreSQL database. 
 
@@ -258,7 +251,7 @@ and
 
 Now that we have a basic understanding of the OME Data Model, let's see how it is used in practice by OMERO servers. 
 
-It was [https://www.nature.com/articles/nmeth.1896 published in 2012] as _OME Remote Objects (OMERO), a software platform that enables access to and use of a wide range of biological data. OMERO uses a server-based middleware application to provide a unified interface for images, matrices and tables._ It follows on to describe that OMERO is not a single application, but many, or in their words,_"a tiered application of databases, middleware and remote client applications._
+It was [published in 2012](https://www.nature.com/articles/nmeth.1896) as _OME Remote Objects (OMERO), a software platform that enables access to and use of a wide range of biological data. OMERO uses a server-based middleware application to provide a unified interface for images, matrices and tables._ It follows on to describe that OMERO is not a single application, but many, or in their words,_"a tiered application of databases, middleware and remote client applications._
 
 Figure 1B of the article describes the main information for our purposes here: _OME-XML is used by OMERO code generators to generate the OMERO relational database, the object-relational mapping model and the ICE-based remote-access system._
 
@@ -268,7 +261,7 @@ _Data are imported into OMERO using Bio-Formats. All metadata are read and, wher
 
 From there, it is possible to see that the Annotations in OMERO installations are indeed central, as they host anything that the OME Data Model was not able to capture beforehand. 
 
-There are many databases core to OMERO, a "Binary Repository" flat file storage, hosting the binary data for the images, a Lucene Search Index and _the OMERO relational database, normally run by PostgreSQL (http://www. postgresql.org/), [which] holds all metadata associated with the binary images, all user information and most simple annotations, and records all write transactions in the OMERO installation._
+There are many databases core to OMERO, a "Binary Repository" flat file storage, hosting the binary data for the images, a Lucene Search Index and _the OMERO relational database, normally run by PostgreSQL (http://www.postgresql.org/), which holds all metadata associated with the binary images, all user information and most simple annotations, and records all write transactions in the OMERO installation._
 
 The documentation page for the model on OMERO (https://omero.readthedocs.io/en/stable/developers/Model.html) clarifies how the OME Data Model relates to OMERO installations. It explains that
 
@@ -280,13 +273,11 @@ Continuing that, one can see the use of Ice on how different clients may interac
 
 _If we take a concrete example, a C++ client might create an Image via new omero::model::ImageI(). The “I” suffix represents an “implementation” in the Ice naming scheme and this subclasses from omero::model::Image. This can be remotely passed to the server which will be deserialized as an omero.model.ImageI object. This will then get converted to an ome.model.core.Image, which can finally be persisted to the database._
 
-So Ice is a middleware that bridges clent code and an OMERO servers. I also asked GPT 5 to clarify a bit how it works:
-
-_Under the hood, the objects are defined in Java and exposed remotely through the Ice middleware. Ice acts as the bridge between client code (such as omero-py) and the OMERO server, serializing requests such as getName() or saveAndReturnObject() into a binary protocol (including abstracted types) and routing them to the server. On the server side, these calls are deserialized back into method invocations on the corresponding Java model classes, which then persist data into PostgreSQL or retrieve it from the database. This setup ensures that clients written in Python, Java, C++, or MATLAB all interact with the same underlying object model without having to deal directly with SQL or the physical database schema._
+So Ice is a middleware that bridges client code and OMERO servers, allowing objects to be sent remotely via an internet connection.
 
 The details of the implementation are rather complex — and perhaps unnecessary for the goal of comparing omero-ontop to omero-rdf. 
 
-It may suffice to see that https://omero.readthedocs.io/en/stable/developers/Model/EveryObject.html# lists the objects available through OMERO, following the OME Data Model and that additional information are added via Annotations (e.g. see https://omero.readthedocs.io/en/stable/developers/Model/KeyValuePairs.html).These are accessed via the patterns described in the OMERO API (https://omero.readthedocs.io/en/stable/developers/Modules/Api.html). OMERO.py follows the patterns (https://github.com/ome/omero-py)
+It may suffice to see that https://omero.readthedocs.io/en/stable/developers/Model/EveryObject.html# lists the objects available through OMERO, following the OME Data Model and that additional information are added via Annotations (e.g. see https://omero.readthedocs.io/en/stable/developers/Model/KeyValuePairs.html).These are accessed via the patterns described in the OMERO API (https://omero.readthedocs.io/en/stable/developers/Modules/Api.html).
 
 In omero-rdf, for example, the model is acessed via omero-py using the BlitzGateway (https://omero.readthedocs.io/en/stable/developers/PythonBlitzGateway.html). For example:
 
@@ -312,8 +303,8 @@ The gateway does some nice things, like hiding the use of `rstring` and other `r
 
 Also, documentation says that the Blitz gateway was originally built for the [OMERO.web framework](https://omero.readthedocs.io/en/stable/developers/Web.html) but has not yet been extended to wrap every omero.model object with a specific Blitz Object Wrapper. OMERO.web is a Django application, so it is built around Python bindings for OMERO servers. 
 
-
 For example, in OMERO-RDF, the data is accessed like: 
+
 ```py
 from omero.gateway import BlitzGateway, BlitzObjectWrapper
 from omero.model import Dataset, Image, IObject, Plate, Project, Screen
@@ -331,7 +322,6 @@ from omero.model import Dataset, Image, IObject, Plate, Project, Screen
 
 ONTOP, on the other hand, is a Java application that talks directly to the OMERO PostgreSQL instance via a JDBC driver. 
 
-
 Now that we have a better idea of how the OME Data Model is actually embedded in OMERO, let's understand how it is materialized (or virtualized) in RDF triples. 
 
 ## The ontologies and namespaces related to OME 
@@ -343,9 +333,7 @@ The standard practice is relying on reference ontologies, like the ones develope
 There have been efforts in the past to have an explict OME Core Ontology written in the Web Ontology Language (OWL). There is small [2019 paper](https://ceur-ws.org/Vol-2849/paper-25.pdf) that says _the OME consortium has adopted the newly developed OWL-based OME model as an official companion to their XSD-based model._ It clarifies that _The OME core ontology is a translation of the OME-XML format of the OME data model version 2016-063 that covers all its concepts and attributes._ 
 
 
-There is also a related 4DN-OME ontology, an _extension of the OME-core ontology, specifically tailored at enhancing the reproducibility and comparison of single-molecule, super-resolution fluorescence microscopy experiments._ It implements, among other things, an extension of _the existing OME core-classes `Instrument’ and `Image’ to reflect the technological advances and the quality control requirements associated with single-molecule, super-resolution microscopy._
-
-It was tied to an application called the Micro-Meta App, which _provides an interactive future-proof approach to document imaging experiments based on the 4DN-OME ontology and the proposed tiered-system of guidelines._ The app itself received a [description on Nature Methods](https://www.nature.com./articles/s41592-021-01315-z) in 2021.
+There is also a related 4DN-OME ontology, an extension of the OME-core ontology tied to an application called the Micro-Meta App, which _provides an interactive future-proof approach to document imaging experiments based on the 4DN-OME ontology and the proposed tiered-system of guidelines._ The app itself received a [description on Nature Methods](https://www.nature.com./articles/s41592-021-01315-z) in 2021, but it is somewhat orthogonal to OMERO-RDF. 
 
 
 There is a [GitLab repository](https://gitlab.com/openmicroscopy/incubator/ome-owl) for ome-owl that is [mirrored on GitHub](https://github.com/German-BioImaging/ome-owl) by German BioImaging. The 4DN-OME ontology is hosted in the same GitHub repository as OME-OWL and imports it, e.g.: 
@@ -360,7 +348,7 @@ There is a [GitLab repository](https://gitlab.com/openmicroscopy/incubator/ome-o
 Looking at the OME-core ontology, the following prefixes (among others) are defined:
 
 
-```
+```ttl
 @prefix : <http://www.openmicroscopy.org/rdf/2016-06/ome_core/> .
 @prefix mbmp: <http://www.openmicroscopy.org/rdf/2016-06/ome_core/MicrobeamManipuration#> .
 @prefix expType: <http://www.openmicroscopy.org/rdf/2016-06/ome_core/ExperimentType#> .
@@ -375,19 +363,15 @@ Versioning ontologies [is a whole topic on its own](http://ontologydesignpattern
 * New ontology versions do not imply new URIs, as some are released very frequently. New URIs are minted for new concepts. 
 * If a concept ends up not fitting the ontology anymore, it is deprecated. 
 
-Alan Ruttenberg mentions on a mailing list that _that doesn't mean that there shouldn't be some way to track the history of a term. However, I would have that happen by annotation, change notes, etc rather than creating a new URI to replace the old one._ I tend to agree with him, at least for _reference_ ontologies like the ones in OBO. OME-OWL is not a reference ontology, though, but more akin to an application ontology. 
-
-The difference between reference and application ontologies are also a topic on its own. But it may be reasonable to say that the OME Core ontology is tied to the OMERO / OME Data Model and the representation of microscopy-related metadata, and not general considerations about the world. These differences may justify or base some of the design decisions of the ontology. 
-
 As the OME Core ontology uses directly English labels, readability for the URIs themselves is improved. There are a few details to note, though, as URIs then need to be more carefully minted. For example, the prefix declaration: 
 
-```
+```ttl
  @prefix mbmp: <http://www.openmicroscopy.org/rdf/2016-06/ome_core/MicrobeamManipuration#> .
 ```
 
 Contains a typo which extends to the class definition itself: 
 
-```
+```ttl
 ###  http://www.openmicroscopy.org/rdf/2016-06/ome_core/MicrobeamManipuration
 :MicrobeamManipuration rdf:type owl:Class ;
                        rdfs:label "Microbeam Manipuration"@en ;
@@ -396,7 +380,7 @@ Contains a typo which extends to the class definition itself:
 
 The schema on ome_core.owl.ttl also defines
 
-```
+```ttl
 ###  http://www.openmicroscopy.org/rdf/2016-06/ome_core/microbeamManipulation
 :microbeamManipulation rdf:type owl:ObjectProperty ;
                        rdfs:domain :Experiment ,
@@ -415,7 +399,7 @@ However, on moving towards a conciliation of OMERO-ONTOP and OMERO-RDF, it would
 
 The OME-Core ontology is also relatively flat in terms of the class hierarchy. Most classes are only subclasses of `owl:Thing` and not connected to other ontologies, neither enriched with logical axioms. 
 
-```
+```ttl
 ###  http://www.openmicroscopy.org/rdf/2016-06/ome_core/Image
 :Image rdf:type owl:Class ;
        rdfs:label "Image"@en ;
@@ -444,19 +428,9 @@ The OME-Core ontology is also relatively flat in terms of the class hierarchy. M
 So in the ontology "brightField", "epifluorescence" and "CMOS" are `owl:NamedIndividual` 
 
 This seem useful, but perhaps a bit semantically awkward, [as per OWL 2 specification](https://www.w3.org/TR/owl2-syntax/): 
+for individuals. 
 
-_5.6 Individuals_
-
-_Individuals in the OWL 2 syntax represent actual objects from the domain.(...)_
-
-_Named individuals are identified using an IRI. Since they are given an IRI, named individuals are entities.(...)_
-
-_The individual a:Peter can be used to represent a particular person. It can be used in axioms such as the following one: `ClassAssertion( a:Person a:Peter )` 	Peter is a person._ 
-
-
-This is probably a consequence of using OWL to represent a data model. As [Chris Mungall put in his 2023 SWAT4HCLS Keynote](https://www.youtube.com/watch?v=2LRVrm8nVz4):one lesson learned is that "OWL is for modelling terminological knowledge, OWL is not a a language to describe data" and "OWL is a language for modelling a domain in an open-world fashion and when you try and use it in a closed-world fashion." He also points to a blogpost by someone that was using OWL as a _schema_ language called [Why I Don't Use OWL Anymore](https://www.topquadrant.com/resources/why-i-dont-use-owl-anymore/). He ends up moving towards talking about [LinkML](https://linkml.io/) and how it may fit some of the needs of our time.
-
-
+This is probably a consequence of using OWL to represent a data model. As [Chris Mungall put in his 2023 SWAT4HCLS Keynote](https://www.youtube.com/watch?v=2LRVrm8nVz4), one lesson learned is that "OWL is for modelling terminological knowledge, OWL is not a a language to describe data" and "OWL is a language for modelling a domain in an open-world fashion and when you try and use it in a closed-world fashion." He also points to a blogpost by someone that was using OWL as a _schema_ language called [Why I Don't Use OWL Anymore](https://www.topquadrant.com/resources/why-i-dont-use-owl-anymore/). He ends up moving towards talking about [LinkML](https://linkml.io/) and how it may fit some of the needs of our time.
 
 In this case, the structure of the OME .owl ontology is perhaps less important than the URIs it mints. 
 
@@ -480,7 +454,7 @@ For example, there is a [set of triples using it](https://github.com/nfdi4plants
 
 There is a [draft pull request by Josh](https://github.com/ome/omero-marshal/pull/84) that tries and replaces the TBD in a top-level context: 
 
-```
+```py
 {'@context': {'@base': 'http://www.openmicroscopy.org/Schemas/OME/2016-06#',
               'omero': 'http://www.openmicroscopy.org/Schemas/OMERO/2016-06#'},
 ```
@@ -508,7 +482,7 @@ At the same time, the omero-ontop-mappings use a set of different namespaces. Fi
 
 and it defines multiple classes according to the OME Model, such as 
 
-```
+```ttl
 ###  https://ld.openmicroscopy.org/core/Image
 core:Image rdf:type owl:Class ;
            rdfs:subClassOf [ rdf:type owl:Restriction ;
@@ -528,10 +502,7 @@ a very similar IRI, but now with lower case endings, denote some of the properti
 core:image rdf:type owl:ObjectProperty .
 ```
 
-These properties don't have a description, though. 
-
-It also models the XML Schema Descriptor enumerations as owl:NamedIndividuals, for example:
-
+These properties don't have a description, though. It also models the XML Schema Descriptor enumerations as owl:NamedIndividuals, for example:
 
 ```
 #################################################################
@@ -550,7 +521,8 @@ It also models the XML Schema Descriptor enumerations as owl:NamedIndividuals, f
                                                                      rdfs:label "LCM"@en .
 ```
 
-A difference between the new, ONTOP-related ome_core.ttl and the old .owl version is the use the LinkML model to specify types.
+A difference between the new, ONTOP-related ome_core.ttl and the other, older, .owl version is the use the LinkML model to specify types.
+
 In particular, it uses the classes: 
 
 ```
@@ -568,7 +540,7 @@ linkml:String
 
 ### Detector types in .xsd and the OME ontologies
 
-Let's see how the information DetectorType --> CMOS is encoded in the xsd, 2019 OME OWL and the ONTOP LD, with some detail ommitted.  
+Let's see how the information DetectorType --> CMOS is encoded in the xsd, 2019 OME OWL and the ONTOP LD, with some detail omitted.  
 
 
 ```xsd
@@ -621,12 +593,9 @@ OME-OWL 2019 aggregates "Detector" and "Type" in a single class DetectorType, bu
 
 Now the OMERO-ONTOP ontology has a few more steps. It also creates a DetectorType class, but CMOS is defined twice, first as an instance of owl:Class and then as an instance of owl:NamedIndividual. It is also, at the same time, an instance and a subclass of core:DetectorType.
 
-This is an example of _punning_ in practice. Punning is the use of the same URI for multiple things, including a class and an individual, a feature [introduced in OWL 2](https://www.w3.org/TR/owl2-new-features/#F12%3a_Punning). It enables modelling of metaclasses. As OWL is does not allow real [https://nemo.inf.ufes.br/en/projetos/mlt/ multi-level modeling], the semantics becomes a bit hazy. Punning is (IMO) a kidn of a hack to insert multi-level modelling in OWL.
+This is an example of _punning_ in practice. Punning is the use of the same URI for multiple things, including a class and an individual, a feature [introduced in OWL 2](https://www.w3.org/TR/owl2-new-features/#F12%3a_Punning). It enables modelling of metaclasses. As OWL is does not allow real [https://nemo.inf.ufes.br/en/projetos/mlt/ multi-level modeling], the semantics becomes a bit hazy. Punning is a kind of a hack to insert multi-level modelling in OWL.
 
 So "CMOS" is an owl:NamedIndividual of the metaclass core:DetectorType, while it is also a class of, say, the CMOS detector in a particular microscope. 
-
-core:DetectorType and core:Detector are also linked.
-
 
 It uses two different ways to specify the valid detector types, one OWL-style, using a `owl:equivalentClass` , which closes the definition, and the other using [linkml:permissible_values](https://w3id.org/linkml/permissible_values), which defines _A list of possible values for a slot range._
 
@@ -683,9 +652,9 @@ xmlns:OME="http://www.openmicroscopy.org/Schemas/OME/2016-06"
 
 That namespace is now the default by OMERO-RDF (with the addition of "OMERO=http://www.openmicroscopy.org/Schemas/OMERO/2016-06) in a recent draft [draft PR](https://github.com/German-BioImaging/omero-rdf/pull/30). 
 
-Though, before, OMERO-RDF used  `<http://www.openmicroscopy.org/rdf/2016-06/ome_core/>` and `<http://www.openmicroscopy.org/TBD/omero/>`, the namespaces defined by the short-lived "OME-OWL" project, so legacy triples generated with the pipeline might use this IRS
+Though, before, OMERO-RDF used  `<http://www.openmicroscopy.org/rdf/2016-06/ome_core/>` and `<http://www.openmicroscopy.org/TBD/omero/>`, the namespaces defined by the short-lived "OME-OWL" project, so legacy triples generated with the pipeline might use this.
 
-The [ome-ld](https://github.com/joshmoore/ome-ld/blob/main/src/linkml.template) repository uses a differentnew prefix for representing data in LinkML format:
+The [ome-ld](https://github.com/joshmoore/ome-ld/blob/main/src/linkml.template) repository uses a different new prefix for representing data:
 
 ```
   core: https://ld.openmicroscopy.org/core/
@@ -727,7 +696,7 @@ core:Image owl:equivalentClass omekg:Image .
 So, in theory, omekg:Image is [defined by](https://www.w3.org/TR/rdf12-schema/#ch_isdefinedby) core:Image, while also being [equivalent](https://www.w3.org/TR/owl-ref/#equivalentClass-def) to it.
 
 
-in some places in the OMERO-ONTOP mappings, one can find also the `omens` prefixs
+in some places in the OMERO-ONTOP mappings, one can find also the `omens` prefixs. It is used to mint URIs on the fly, as the base URL for keys in annotations with key-value pairs (e.g. creating `omens:{key}` on the fly).
 
 ```
 prefix omens: <http://www.openmicroscopy.org/ns/default/>
@@ -746,7 +715,7 @@ As the poster ["There and back again"](https://zenodo.org/records/10687659) ment
 [OMERO-RDF](https://github.com/German-BioImaging/omero-rdf) is an OMERO plugin in Python that exports RDF from OMERO.
 
 
-It takes an OMERO object and brings to life triples in a range of possible formats. These are specified in an OOP fashion: 
+It takes an OMERO object and brings to life triples in a range of possible formats. These are specified in an OOP fashion. The code base in general goes around OOP design patterns, sometimes in a Java-like fashion, so a Java-esque mindset helps:  
 
 
 ```py
@@ -788,29 +757,7 @@ class NonStreamingFormat(Format):
 
     def serialize_triple(self, triple):
         raise RuntimeError("triple serialization not supported during streaming")
-
-class TurtleFormat(NonStreamingFormat):
-#..
-    def serialize_graph(self) -> None:
-        return self.graph.serialize()
-
-class JSONLDFormat(NonStreamingFormat):
 #...
-    def serialize_graph(self) -> None:
-        return self.graph.serialize(
-            format="json-ld",
-            context=self.context(),
-            indent=4,
-        )
-
-
-class ROCrateFormat(JSONLDFormat):
-#...
-    def serialize_graph(self):
-        ctx = self.context()
-        j = pyld_jsonld_from_rdflib_graph(self.graph)
-#...
-        return json.dumps(j, indent=4)
 ```
 
 These specify the formats, but the processing is done by a Handler class
@@ -855,7 +802,6 @@ If I am not missing something, that seems to be the URI for the OMERO server, wh
 
 Now let's continue with other interesting methods. 
 
-
 ```py
     def get_bnode(self) -> BNode:
 #...
@@ -882,10 +828,9 @@ Now let's continue with other interesting methods.
 
 That is interesting. So, what is an IObject in the OMERO Model?
 
-After some web search, I got to: *IObject the base interface for persistent model objects (things stored in the database). Classes like Image, Dataset, or Project implement IObject.* This line is *convenience so the Handler can work whether it’s handed a raw OMERO object or the Blitz wrapper.*
+After some web search, I got to: *IObject  the base interface for persistent model objects (things stored in the database). Classes like Image, Dataset, or Project implement IObject.* This line is *convenience so the Handler can work whether it’s handed a raw OMERO object or the Blitz wrapper.*
 
 The Handle instances are also callable to get the data in the objects:
-
 
 ```py
     def __call__(self, o: BlitzObjectWrapper) -> URIRef:
@@ -894,9 +839,7 @@ The Handle instances are also callable to get the data in the objects:
 
 ```
 
-
 Annotations in the objects are looped through individually. This is part of how OMERO-RDF handles annotations, which is may be  different from OMERO-ONTOP.
-
 
 ```py 
 
