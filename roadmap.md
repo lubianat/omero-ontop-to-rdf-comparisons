@@ -104,3 +104,5 @@ For IRI resolvability, the minted IRI for instances could be something like:
 omero:idr.openmicroscopy.org/Project/1152 
 
 This would make IRIs big-ish, but under an OME-run namespace, so it can resolve to a page explaining e.g. "this is a Project with id 1152 on an omero server runing on idr.openmicroscopy.org" 
+
+There is a related discussion on the image.sc forum: https://forum.image.sc/t/uri-to-access-data-in-omero-using-the-omero-api/92571 
